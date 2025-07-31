@@ -4,6 +4,7 @@ from typing import Any
 from pydantic import BaseModel, ConfigDict
 
 from app.core import security
+from app.models.user import UserRole
 from app.schemas.message import ApiResponse
 
 
@@ -15,6 +16,8 @@ class UserBase(BaseModel):
     id: int | None = None
     username: str
     email: str
+    total_score: int = 0
+    role: UserRole = UserRole.STUDENT
     created_at: datetime | None = None
     updated_at: datetime | None = None
     deleted_at: datetime | None = None
@@ -41,12 +44,14 @@ class UserInCreate(BaseModel):
     username: str
     password: str
     email: str
+    role: UserRole = UserRole.STUDENT
 
 
-class UserInUpdate(UserInCreate):
+class UserInUpdate(BaseModel):
     username: str | None = None
     password: str | None = None
     email: str | None = None
+    role: UserRole | None = None
 
 
 class UsersFilters(BaseModel):

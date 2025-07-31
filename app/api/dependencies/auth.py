@@ -11,7 +11,7 @@ from app.core.config import get_app_settings
 from app.core.settings.app import AppSettings
 from app.core.token import get_user_from_token
 from app.database.repositories.users import UsersRepository
-from app.models.user import User
+from app.models.user import User, UserRole
 
 AUTH_HEADER_KEY = settings.auth_header_key
 
@@ -114,3 +114,23 @@ def get_current_user_auth(
     required: bool = True,
 ) -> Callable:
     return _get_current_user if required else _get_current_user_optional
+
+
+async def _get_current_admin_user(
+    users_repo: UsersRepository = Depends(get_repository(UsersRepository)),
+    token: str = Depends(_get_auth_header_retriever()),
+    settings: AppSettings = Depends(get_app_settings),
+) -> User:
+    user = await _get_current_user(users_repo=users_repo, token=token, settings=settings)
+    
+    if user.role != UserRole.ADMIN:
+        raise HTTPException(
+            status_code=HTTP_403_FORBIDDEN,
+            detail="Admin access required",
+        )
+    
+    return user
+
+
+def get_current_admin_user() -> Callable:
+    return _get_current_admin_user

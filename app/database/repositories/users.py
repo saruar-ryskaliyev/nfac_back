@@ -62,6 +62,7 @@ class UsersRepository(BaseRepository):
         user_in_db_obj = UserInDB(
             username=user_in.username,
             email=user_in.email,
+            role=user_in.role,
         )
         user_in_db_obj.change_password(user_in.password)
 

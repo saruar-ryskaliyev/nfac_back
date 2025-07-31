@@ -42,3 +42,4 @@ services:
     restart: always
     networks:
       - fpb-net
+
