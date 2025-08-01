@@ -1,9 +1,6 @@
 import logging
 
-from fastapi.encoders import jsonable_encoder
 from starlette.status import (
-    HTTP_200_OK,
-    HTTP_201_CREATED,
     HTTP_404_NOT_FOUND,
 )
 
@@ -18,7 +15,7 @@ from app.schemas.question import (
     QuestionResponse,
 )
 from app.services.base import BaseService
-from app.utils import ServiceResult, response_4xx, return_service
+from app.utils import response_4xx, return_service
 
 logger = logging.getLogger(__name__)
 
@@ -31,7 +28,7 @@ class QuestionsService(BaseService):
         questions_repo: QuestionsRepository,
         quizzes_repo: QuizzesRepository,
         options_repo: OptionsRepository,
-    ) -> ServiceResult:
+    ):
         quiz = await quizzes_repo.get_quiz_by_id(quiz_id=question_in.quiz_id)
         if not quiz:
             return response_4xx(
@@ -57,7 +54,7 @@ class QuestionsService(BaseService):
         self,
         question_id: int,
         questions_repo: QuestionsRepository,
-    ) -> ServiceResult:
+    ):
         question = await questions_repo.get_question_by_id(question_id=question_id)
         if not question:
             return response_4xx(
@@ -77,7 +74,7 @@ class QuestionsService(BaseService):
         question_filters: QuestionFilters,
         questions_repo: QuestionsRepository,
         quizzes_repo: QuizzesRepository,
-    ) -> ServiceResult:
+    ):
         quiz = await quizzes_repo.get_quiz_by_id(quiz_id=quiz_id)
         if not quiz:
             return response_4xx(
@@ -97,7 +94,7 @@ class QuestionsService(BaseService):
         self,
         question_filters: QuestionFilters,
         questions_repo: QuestionsRepository,
-    ) -> ServiceResult:
+    ):
         questions = await questions_repo.get_all_questions(skip=question_filters.skip, limit=question_filters.limit)
 
         return QuestionResponse(
@@ -112,7 +109,7 @@ class QuestionsService(BaseService):
         question_in: QuestionInUpdate,
         questions_repo: QuestionsRepository,
         options_repo: OptionsRepository,
-    ) -> ServiceResult:
+    ):
         question = await questions_repo.get_question_by_id(question_id=question_id)
         if not question:
             return response_4xx(
@@ -139,7 +136,7 @@ class QuestionsService(BaseService):
         self,
         question_id: int,
         questions_repo: QuestionsRepository,
-    ) -> ServiceResult:
+    ):
         question = await questions_repo.get_question_by_id(question_id=question_id)
         if not question:
             return response_4xx(

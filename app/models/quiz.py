@@ -9,6 +9,7 @@ from app.models.rwmodel import RWModel
 if TYPE_CHECKING:
     from app.models.question import Question
     from app.models.user import User
+    from app.models.quiz_attempt import QuizAttempt
 
 
 class Quiz(RWModel, DateTimeModelMixin):
@@ -26,3 +27,4 @@ class Quiz(RWModel, DateTimeModelMixin):
 
     creator: Mapped["User"] = relationship("User", back_populates="quizzes")
     questions: Mapped[list[Question]] = relationship("Question", back_populates="quiz")
+    attempts: Mapped[list["QuizAttempt"]] = relationship("QuizAttempt", back_populates="quiz")

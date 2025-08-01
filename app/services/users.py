@@ -1,10 +1,7 @@
 import logging
 
 from fastapi import Depends
-from fastapi.encoders import jsonable_encoder
 from starlette.status import (
-    HTTP_200_OK,
-    HTTP_201_CREATED,
     HTTP_400_BAD_REQUEST,
     HTTP_404_NOT_FOUND,
 )
@@ -24,7 +21,7 @@ from app.schemas.user import (
     UsersFilters,
 )
 from app.services.base import BaseService
-from app.utils import ServiceResult, response_4xx, return_service
+from app.utils import response_4xx, return_service
 
 logger = logging.getLogger(__name__)
 
@@ -35,7 +32,7 @@ class UsersService(BaseService):
         self,
         user_id: int,
         users_repo: UsersRepository = Depends(get_repository(UsersRepository)),
-    ) -> ServiceResult:
+    ):
         user = await users_repo.get_user_by_id(user_id=user_id)
         if not user:
             return response_4xx(
@@ -52,7 +49,7 @@ class UsersService(BaseService):
     async def get_user_by_token(
         self,
         token_user: User,
-    ) -> ServiceResult:
+    ):
         if not token_user:
             return response_4xx(
                 status_code=HTTP_400_BAD_REQUEST,
@@ -69,7 +66,7 @@ class UsersService(BaseService):
         self,
         users_filters: UsersFilters = Depends(get_users_filters),
         users_repo: UsersRepository = Depends(get_repository(UsersRepository)),
-    ) -> UserResponse:
+    ):
         users = await users_repo.get_filtered_users(skip=users_filters.skip, limit=users_filters.limit)
 
         if not users:
@@ -89,7 +86,7 @@ class UsersService(BaseService):
         user_in: UserInCreate,
         users_repo: UsersRepository = Depends(get_repository(UsersRepository)),
         secret_key: str = "",
-    ) -> UserResponse:
+    ):
         duplicate_user = await users_repo.get_duplicated_user(user_in=user_in)
 
         if duplicate_user:
@@ -116,7 +113,7 @@ class UsersService(BaseService):
         user_in: UserInSignIn,
         users_repo: UsersRepository = Depends(get_repository(UsersRepository)),
         secret_key: str = "",
-    ) -> UserResponse:
+    ):
         searched_user = await users_repo.get_user_by_email(email=user_in.email)
 
         if not searched_user:
@@ -154,7 +151,7 @@ class UsersService(BaseService):
         token_user: User,
         user_in: UserInUpdate,
         users_repo: UsersRepository = Depends(get_repository(UsersRepository)),
-    ) -> UserResponse:
+    ):
         updated_user = await users_repo.update_user(user=token_user, user_in=user_in)
 
         return UserResponse(
@@ -167,7 +164,7 @@ class UsersService(BaseService):
         self,
         token_user: User,
         users_repo: UsersRepository = Depends(get_repository(UsersRepository)),
-    ) -> ServiceResult:
+    ):
         deleted_user = await users_repo.delete_user(user=token_user)
 
         return UserResponse(

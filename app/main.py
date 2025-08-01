@@ -21,6 +21,7 @@ from app.utils import (
     http_exception_handler,
     request_validation_exception_handler,
 )
+from logging import Logger
 
 config_path = Path(__file__).with_name("logging_conf.json")
 
@@ -37,28 +38,28 @@ def create_app() -> FastAPI:
     )
 
     _app.add_middleware(CorrelationIdMiddleware)
-    _app.logger = CustomizeLogger.make_logger(config_path)
+    _app.state.logger = CustomizeLogger.make_logger(config_path)
     _app.include_router(api_router, prefix=settings.api_v1_prefix)
     _app.mount("/static", StaticFiles(directory="app/static"))
 
     @_app.get("/docs", include_in_schema=False)
     async def custom_swagger_ui_html():
         return get_swagger_ui_html(
-            openapi_url=_app.openapi_url,
+            openapi_url=_app.openapi_url or "/openapi.json",
             title=_app.title + " - Swagger UI custom",
             oauth2_redirect_url=_app.swagger_ui_oauth2_redirect_url,
             swagger_js_url=f"{settings.openapi_prefix}/static/swagger-ui-bundle.js",
             swagger_css_url=f"{settings.openapi_prefix}/static/swagger-ui.css",
         )
 
-    @_app.get(_app.swagger_ui_oauth2_redirect_url, include_in_schema=False)
+    @_app.get(_app.swagger_ui_oauth2_redirect_url or "/docs/oauth2-redirect", include_in_schema=False)
     async def swagger_ui_redirect():
         return get_swagger_ui_oauth2_redirect_html()
 
     @_app.get("/redoc", include_in_schema=False)
     async def redoc_html():
         return get_redoc_html(
-            openapi_url=_app.openapi_url,
+            openapi_url=_app.openapi_url or "/openapi.json",
             title=_app.title + " - ReDoc",
             redoc_js_url=f"{settings.openapi_prefix}/static/redoc.standalone.js",
         )

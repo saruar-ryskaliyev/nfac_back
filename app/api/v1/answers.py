@@ -17,14 +17,15 @@ router = APIRouter()
 
 
 @router.post(
-    path="/submit",
+    path="/attempts/{attempt_id}/answers",
     status_code=HTTP_201_CREATED,
     response_model=AnswerResponse,
     responses=ERROR_RESPONSES,
-    name="answers:submit",
+    name="answers:submit_to_attempt",
 )
-async def submit_answers(
+async def submit_answers_to_attempt(
     *,
+    attempt_id: int,
     answers_service: AnswersService = Depends(get_service(AnswersService)),
     answers_repo: AnswersRepository = Depends(get_repository(AnswersRepository)),
     questions_repo: QuestionsRepository = Depends(get_repository(QuestionsRepository)),
@@ -33,10 +34,11 @@ async def submit_answers(
     current_user: User = Depends(get_current_user_auth()),
 ):
     """
-    Submit answers for questions.
+    Submit answers for questions within a specific attempt.
     """
-    result = await answers_service.submit_answers(
-        user_id=current_user.id,
+    result = await answers_service.submit_answers_to_attempt(
+        attempt_id=attempt_id,
+        user=current_user,
         answers=answers,
         answers_repo=answers_repo,
         questions_repo=questions_repo,

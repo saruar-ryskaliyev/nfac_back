@@ -12,15 +12,15 @@ from app.models.rwmodel import RWModel
 
 
 if TYPE_CHECKING:
-    from app.models.user import User
     from app.models.question import Question
+    from app.models.quiz_attempt import QuizAttempt
 
 
 class Answer(RWModel, DateTimeModelMixin):
     __tablename__: str = "answers"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
+    attempt_id: Mapped[int] = mapped_column(ForeignKey("quiz_attempts.id", ondelete="CASCADE"), nullable=False)
     question_id: Mapped[int] = mapped_column(ForeignKey("questions.id"), nullable=False)
     selected_option_ids: Mapped[list[int] | None] = mapped_column(ARRAY(Integer))
     text_answer: Mapped[str | None] = mapped_column(Text)
@@ -31,13 +31,13 @@ class Answer(RWModel, DateTimeModelMixin):
         nullable=False,
     )
 
-    user: Mapped["User"] = relationship(back_populates="answers")
     question: Mapped["Question"] = relationship(back_populates="answers")
+    quiz_attempt: Mapped["QuizAttempt"] = relationship(back_populates="answers")
 
     
-    def __init__(self, user_id: int, question_id: int, selected_option_ids: list[int] | None = None, text_answer: str | None = None, is_correct: bool | None = None, **kwargs):
+    def __init__(self, attempt_id: int, question_id: int, selected_option_ids: list[int] | None = None, text_answer: str | None = None, is_correct: bool | None = None, **kwargs):
         super().__init__(**kwargs)
-        self.user_id = user_id
+        self.attempt_id = attempt_id
         self.question_id = question_id
         self.selected_option_ids = selected_option_ids
         self.text_answer = text_answer

@@ -26,13 +26,16 @@ class QuestionsRepository(BaseRepository):
         return question
 
     @db_error_handler
-    async def get_question_by_id(self, *, question_id: int) -> Question:
+    async def get_question_by_id(self, *, question_id: int) -> Question | None:
         from app.models.option import Option
 
         query = select(Question).options(selectinload(Question.options.and_(Option.deleted_at.is_(None)))).where(and_(Question.id == question_id, Question.deleted_at.is_(None)))
 
         raw_result = await self.connection.execute(query)
         result = raw_result.fetchone()
+
+        if result is None:
+            return None
 
         return result.Question if result is not None else result
 

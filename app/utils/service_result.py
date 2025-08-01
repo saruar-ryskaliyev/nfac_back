@@ -30,7 +30,7 @@ class ServiceResult:
             # Turn it into an HTTP exception
             raise HTTPException(
                 status_code=self.error.status_code,
-                detail=self.error.exception_case,
+                detail=self.error.context,
             )
         return self.value
 
@@ -40,7 +40,7 @@ def return_service(func: Callable) -> Callable:
     Decorator that wraps service functions to return ServiceResult objects.
     """
     @wraps(func)
-    async def wrapper(*args, **kwargs):
+    async def wrapper(*args, **kwargs) -> ServiceResult:
         try:
             result = await func(*args, **kwargs)
             return ServiceResult(result)

@@ -10,7 +10,7 @@ from app.models.rwmodel import RWModel
 
 if TYPE_CHECKING:
     from app.models.quiz import Quiz
-    from app.models.answer import Answer
+    from app.models.quiz_attempt import QuizAttempt
 
 class UserRole(str, enum.Enum):
     ADMIN = "admin"
@@ -33,7 +33,7 @@ class User(RWModel, DateTimeModelMixin):
 
     role: Mapped[UserRole] = mapped_column(SQLEnum(UserRole, name="userrole", values_callable=lambda x: [e.value for e in x]), nullable=False, server_default=text("'student'"))
     quizzes: Mapped[list["Quiz"]] = relationship("Quiz", back_populates="creator")
-    answers: Mapped[list["Answer"]] = relationship("Answer", back_populates="user")
+    quiz_attempts: Mapped[list["QuizAttempt"]] = relationship("QuizAttempt", back_populates="user")
 
     def check_password(self, password: str) -> bool:
         return security.verify_password(self.salt + password, self.hashed_password)

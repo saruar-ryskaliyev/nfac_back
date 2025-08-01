@@ -1,9 +1,6 @@
 import logging
 
-from fastapi.encoders import jsonable_encoder
 from starlette.status import (
-    HTTP_200_OK,
-    HTTP_201_CREATED,
     HTTP_400_BAD_REQUEST,
     HTTP_404_NOT_FOUND,
 )
@@ -18,7 +15,7 @@ from app.schemas.quiz import (
     QuizResponse,
 )
 from app.services.base import BaseService
-from app.utils import ServiceResult, response_4xx, return_service
+from app.utils import response_4xx, return_service
 
 logger = logging.getLogger(__name__)
 
@@ -30,7 +27,7 @@ class QuizzesService(BaseService):
         creator: User,
         quiz_in: QuizInCreate,
         quizzes_repo: QuizzesRepository,
-    ) -> ServiceResult:
+    ):
         created_quiz = await quizzes_repo.create_quiz(creator=creator, quiz_in=quiz_in)
 
         return QuizResponse(
@@ -43,7 +40,7 @@ class QuizzesService(BaseService):
         self,
         quiz_id: int,
         quizzes_repo: QuizzesRepository,
-    ) -> ServiceResult:
+    ):
         quiz = await quizzes_repo.get_quiz_by_id(quiz_id=quiz_id)
         if not quiz:
             return response_4xx(
@@ -61,7 +58,7 @@ class QuizzesService(BaseService):
         self,
         quiz_filters: QuizFilters,
         quizzes_repo: QuizzesRepository,
-    ) -> ServiceResult:
+    ):
         quizzes = await quizzes_repo.get_public_quizzes(skip=quiz_filters.skip, limit=quiz_filters.limit)
 
         return QuizResponse(
@@ -74,7 +71,7 @@ class QuizzesService(BaseService):
         self,
         quiz_filters: QuizFilters,
         quizzes_repo: QuizzesRepository,
-    ) -> ServiceResult:
+    ):
         if not quiz_filters.tag:
             return response_4xx(
                 status_code=HTTP_400_BAD_REQUEST,
@@ -94,7 +91,7 @@ class QuizzesService(BaseService):
         user_id: int,
         quiz_filters: QuizFilters,
         quizzes_repo: QuizzesRepository,
-    ) -> ServiceResult:
+    ):
         quizzes = await quizzes_repo.get_quizzes_by_creator(creator_id=user_id, skip=quiz_filters.skip, limit=quiz_filters.limit)
 
         return QuizResponse(
@@ -108,7 +105,7 @@ class QuizzesService(BaseService):
         quiz_id: int,
         quiz_in: QuizInUpdate,
         quizzes_repo: QuizzesRepository,
-    ) -> ServiceResult:
+    ):
         quiz = await quizzes_repo.get_quiz_by_id(quiz_id=quiz_id)
         if not quiz:
             return response_4xx(
@@ -128,7 +125,7 @@ class QuizzesService(BaseService):
         self,
         quiz_id: int,
         quizzes_repo: QuizzesRepository,
-    ) -> ServiceResult:
+    ):
         quiz = await quizzes_repo.get_quiz_by_id(quiz_id=quiz_id)
         if not quiz:
             return response_4xx(

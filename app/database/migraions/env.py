@@ -9,6 +9,14 @@ from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import AsyncEngine
 
 from app.core.config import get_app_settings
+from app.models.rwmodel import RWModel
+# Import all models to ensure they're registered with metadata
+from app.models.user import User
+from app.models.quiz import Quiz
+from app.models.question import Question
+from app.models.answer import Answer
+from app.models.quiz_attempt import QuizAttempt
+from app.models.option import Option
 
 sys.path.append(str(pathlib.Path(__file__).resolve().parents[3]))
 
@@ -17,9 +25,10 @@ DATABASE_URL = SETTINGS.db_url
 
 config = context.config
 
-fileConfig(config.config_file_name)
+if config.config_file_name:
+    fileConfig(config.config_file_name)
 
-target_metadata = None
+target_metadata = RWModel.metadata
 
 config.set_main_option("sqlalchemy.url", str(DATABASE_URL))
 
@@ -45,9 +54,13 @@ def do_run_migrations(connection: Connection) -> None:
 
 
 async def run_migrations_online() -> None:
+    config_section = config.get_section(config.config_ini_section)
+    if config_section is None:
+        config_section = {}
+    
     connectable = AsyncEngine(
         engine_from_config(
-            config.get_section(config.config_ini_section),
+            config_section,
             prefix="sqlalchemy.",
             poolclass=pool.NullPool,
             future=True,

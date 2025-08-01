@@ -12,7 +12,7 @@ class AnswerBase(BaseModel):
     )
 
     id: int | None = None
-    user_id: int
+    attempt_id: int
     question_id: int
     selected_option_ids: list[int] | None = None
     text_answer: str | None = None
@@ -30,7 +30,7 @@ class AnswerSubmit(BaseModel):
 
 
 class AnswerInCreate(BaseModel):
-    user_id: int
+    attempt_id: int
     question_id: int
     selected_option_ids: list[int] | None = None
     text_answer: str | None = None
@@ -49,8 +49,10 @@ class AnswerOutData(AnswerBase):
 
 
 class QuizResult(BaseModel):
+    attempt_id: int
     quiz_id: int
     user_id: int
+    attempt_no: int
     total_questions: int
     correct_answers: int
     total_points: int

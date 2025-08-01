@@ -1,6 +1,6 @@
 from typing import Any
 
-from pydantic import ConfigDict, SecretStr
+from pydantic import ConfigDict, SecretStr, PostgresDsn
 
 from app.core.settings.base import BaseAppSettings
 
@@ -25,6 +25,7 @@ class AppSettings(BaseAppSettings):
     jwt_token_prefix: str = "Bearer"
     auth_header_key: str = "Authorization"
     allowed_hosts: list[str] = ["*"]
+    db_url: PostgresDsn
 
     @property
     def fastapi_kwargs(self) -> dict[str, Any]:
