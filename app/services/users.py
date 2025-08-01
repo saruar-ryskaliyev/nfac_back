@@ -43,12 +43,9 @@ class UsersService(BaseService):
                 context={"reason": constant.FAIL_VALIDATION_MATCHED_USER_ID},
             )
 
-        return dict(
-            status_code=HTTP_200_OK,
-            content={
-                "message": constant.SUCCESS_MATCHED_USER_ID,
-                "data": jsonable_encoder(UserOutData.model_validate(user)),
-            },
+        return UserResponse(
+            message=constant.SUCCESS_MATCHED_USER_ID,
+            data=UserOutData.model_validate(user),
         )
 
     @return_service
@@ -62,12 +59,9 @@ class UsersService(BaseService):
                 context={"reason": constant.FAIL_VALIDATION_MATCHED_USER_TOKEN},
             )
 
-        return dict(
-            status_code=HTTP_200_OK,
-            content={
-                "message": constant.SUCCESS_MATCHED_USER_TOKEN,
-                "data": jsonable_encoder(UserOutData.model_validate(token_user)),
-            },
+        return UserResponse(
+            message=constant.SUCCESS_MATCHED_USER_TOKEN,
+            data=UserOutData.model_validate(token_user),
         )
 
     @return_service
@@ -84,12 +78,9 @@ class UsersService(BaseService):
                 context={"reason": constant.FAIL_VALIDATION_MATCHED_FILTERED_USERS},
             )
 
-        return dict(
-            status_code=HTTP_200_OK,
-            content={
-                "message": constant.SUCCESS_GET_USERS,
-                "data": jsonable_encoder([UserOutData.model_validate(user) for user in users]),
-            },
+        return UserResponse(
+            message=constant.SUCCESS_GET_USERS,
+            data=[UserOutData.model_validate(user) for user in users],
         )
 
     @return_service
@@ -114,12 +105,9 @@ class UsersService(BaseService):
 
         user_data_with_auth.token = created_token
 
-        return dict(
-            status_code=HTTP_201_CREATED,
-            content={
-                "message": constant.SUCCESS_SIGN_UP,
-                "data": jsonable_encoder(user_data_with_auth),
-            },
+        return UserResponse(
+            message=constant.SUCCESS_SIGN_UP,
+            data=user_data_with_auth,
         )
 
     @return_service
@@ -155,12 +143,9 @@ class UsersService(BaseService):
 
         user_data_with_auth.token = created_token
 
-        return dict(
-            status_code=HTTP_200_OK,
-            content={
-                "message": constant.SUCCESS_SIGN_IN,
-                "data": jsonable_encoder(user_data_with_auth),
-            },
+        return UserResponse(
+            message=constant.SUCCESS_SIGN_IN,
+            data=user_data_with_auth,
         )
 
     @return_service
@@ -172,12 +157,9 @@ class UsersService(BaseService):
     ) -> UserResponse:
         updated_user = await users_repo.update_user(user=token_user, user_in=user_in)
 
-        return dict(
-            status_code=HTTP_200_OK,
-            content={
-                "message": constant.SUCCESS_UPDATE_USER,
-                "data": jsonable_encoder(UserOutData.model_validate(updated_user)),
-            },
+        return UserResponse(
+            message=constant.SUCCESS_UPDATE_USER,
+            data=UserOutData.model_validate(updated_user),
         )
 
     @return_service
@@ -188,10 +170,7 @@ class UsersService(BaseService):
     ) -> ServiceResult:
         deleted_user = await users_repo.delete_user(user=token_user)
 
-        return dict(
-            status_code=HTTP_200_OK,
-            content={
-                "message": constant.SUCCESS_DELETE_USER,
-                "data": jsonable_encoder(deleted_user),
-            },
+        return UserResponse(
+            message=constant.SUCCESS_DELETE_USER,
+            data=UserOutData.model_validate(deleted_user),
         )

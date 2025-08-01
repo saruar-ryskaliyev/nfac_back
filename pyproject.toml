@@ -12,6 +12,13 @@ packages = [
     {include = "app"}
 ]
 
+[TYPECHECK]
+ignored-classmethod-decorators=
+    classmethod,
+    declared_attr,
+    declared_attr.directive
+
+
 [tool.poetry.dependencies]
 python = "^3.12"
 fastapi = "^0.110.0"

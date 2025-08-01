@@ -1,5 +1,5 @@
 from sqlalchemy import and_, func, or_, select
-from sqlalchemy.ext.asyncio import AsyncConnection
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database.repositories.base import BaseRepository, db_error_handler
 from app.models.user import User
@@ -7,7 +7,7 @@ from app.schemas.user import UserInCreate, UserInDB, UserInUpdate
 
 
 class UsersRepository(BaseRepository):
-    def __init__(self, conn: AsyncConnection) -> None:
+    def __init__(self, conn: AsyncSession) -> None:
         super().__init__(conn)
 
     async def get_user_password_validation(self, *, user: User, password: str) -> bool:
@@ -15,25 +15,25 @@ class UsersRepository(BaseRepository):
         return user_password_checked
 
     @db_error_handler
-    async def get_user_by_id(self, *, user_id: int) -> User:
+    async def get_user_by_id(self, *, user_id: int) -> User | None:
         query = select(User).where(User.id == user_id).limit(1)
 
         raw_result = await self.connection.execute(query)
         result = raw_result.fetchone()
 
-        return result.User if result is not None else result
+        return result.User if result is not None else None
 
     @db_error_handler
-    async def get_user_by_email(self, *, email: str) -> User:
+    async def get_user_by_email(self, *, email: str) -> User | None:
         query = select(User).where(and_(User.email == email, User.deleted_at.is_(None)))
 
         raw_result = await self.connection.execute(query)
         result = raw_result.fetchone()
 
-        return result.User if result is not None else result
+        return result.User if result is not None else None
 
     @db_error_handler
-    async def get_duplicated_user(self, *, user_in: UserInCreate) -> User:
+    async def get_duplicated_user(self, *, user_in: UserInCreate) -> User | None:
         query = select(User).where(
             and_(
                 or_(User.username == user_in.username, User.email == user_in.email),
@@ -42,7 +42,7 @@ class UsersRepository(BaseRepository):
         )
         raw_result = await self.connection.execute(query)
         result = raw_result.fetchone()
-        return result.User if result is not None else result
+        return result.User if result is not None else None
 
     @db_error_handler
     async def get_filtered_users(
@@ -55,7 +55,7 @@ class UsersRepository(BaseRepository):
 
         raw_results = await self.connection.execute(query)
         results = raw_results.scalars().all()
-        return results
+        return list(results)
 
     @db_error_handler
     async def signup_user(self, *, user_in: UserInCreate) -> User:

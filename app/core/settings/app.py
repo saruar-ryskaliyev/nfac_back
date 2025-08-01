@@ -22,7 +22,7 @@ class AppSettings(BaseAppSettings):
     # back-end app settings
     api_v1_prefix: str = "/api/v1"
     secret_key: SecretStr
-    jwt_token_prefix: str = "bearer"
+    jwt_token_prefix: str = "Bearer"
     auth_header_key: str = "Authorization"
     allowed_hosts: list[str] = ["*"]
 

@@ -19,77 +19,56 @@ class QuizzesRepository(BaseRepository):
             creator_id=creator.id,
             is_public=quiz_in.is_public,
         )
-        
+
         self.connection.add(quiz)
         await self.connection.commit()
         await self.connection.refresh(quiz)
-        
+
         return quiz
 
     @db_error_handler
     async def get_quiz_by_id(self, *, quiz_id: int) -> Quiz:
         query = select(Quiz).where(and_(Quiz.id == quiz_id, Quiz.deleted_at.is_(None)))
-        
+
         raw_result = await self.connection.execute(query)
         result = raw_result.fetchone()
-        
+
         return result.Quiz if result is not None else result
 
     @db_error_handler
     async def get_all_quizzes(self, *, skip: int = 0, limit: int = 100) -> list[Quiz]:
         query = select(Quiz).where(Quiz.deleted_at.is_(None)).offset(skip).limit(limit)
-        
+
         raw_result = await self.connection.execute(query)
         results = raw_result.fetchall()
-        
+
         return [result.Quiz for result in results]
 
     @db_error_handler
     async def get_public_quizzes(self, *, skip: int = 0, limit: int = 100) -> list[Quiz]:
-        query = (
-            select(Quiz)
-            .where(and_(Quiz.is_public == True, Quiz.deleted_at.is_(None)))
-            .offset(skip)
-            .limit(limit)
-        )
-        
+        query = select(Quiz).where(and_(Quiz.is_public, Quiz.deleted_at.is_(None))).offset(skip).limit(limit)
+
         raw_result = await self.connection.execute(query)
         results = raw_result.fetchall()
-        
+
         return [result.Quiz for result in results]
 
     @db_error_handler
     async def get_quizzes_by_creator(self, *, creator_id: int, skip: int = 0, limit: int = 100) -> list[Quiz]:
-        query = (
-            select(Quiz)
-            .where(and_(Quiz.creator_id == creator_id, Quiz.deleted_at.is_(None)))
-            .offset(skip)
-            .limit(limit)
-        )
-        
+        query = select(Quiz).where(and_(Quiz.creator_id == creator_id, Quiz.deleted_at.is_(None))).offset(skip).limit(limit)
+
         raw_result = await self.connection.execute(query)
         results = raw_result.fetchall()
-        
+
         return [result.Quiz for result in results]
 
     @db_error_handler
     async def search_quizzes_by_tag(self, *, tag: str, skip: int = 0, limit: int = 100) -> list[Quiz]:
-        query = (
-            select(Quiz)
-            .where(
-                and_(
-                    Quiz.title.ilike(f"%{tag}%"),
-                    Quiz.is_public == True,
-                    Quiz.deleted_at.is_(None)
-                )
-            )
-            .offset(skip)
-            .limit(limit)
-        )
-        
+        query = select(Quiz).where(and_(Quiz.title.ilike(f"%{tag}%"), Quiz.is_public, Quiz.deleted_at.is_(None))).offset(skip).limit(limit)
+
         raw_result = await self.connection.execute(query)
         results = raw_result.fetchall()
-        
+
         return [result.Quiz for result in results]
 
     @db_error_handler
@@ -103,14 +82,14 @@ class QuizzesRepository(BaseRepository):
 
         await self.connection.commit()
         await self.connection.refresh(quiz)
-        
+
         return quiz
 
     @db_error_handler
     async def delete_quiz(self, *, quiz: Quiz) -> Quiz:
         quiz.deleted_at = func.now()
-        
+
         await self.connection.commit()
         await self.connection.refresh(quiz)
-        
+
         return quiz

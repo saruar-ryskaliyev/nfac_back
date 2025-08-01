@@ -1,12 +1,12 @@
 from enum import Enum
-
+from typing import cast
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
-class AppEnvTypes(Enum):
-    prod: str = "prod"
-    dev: str = "dev"
-    test: str = "test"
+class AppEnvTypes(str, Enum):
+    prod = "prod"
+    dev = "dev"
+    test = "test"
 
 
 class BaseAppSettings(BaseSettings):

@@ -122,13 +122,13 @@ async def _get_current_admin_user(
     settings: AppSettings = Depends(get_app_settings),
 ) -> User:
     user = await _get_current_user(users_repo=users_repo, token=token, settings=settings)
-    
+
     if user.role != UserRole.ADMIN:
         raise HTTPException(
             status_code=HTTP_403_FORBIDDEN,
             detail="Admin access required",
         )
-    
+
     return user
 
 

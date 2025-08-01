@@ -9,7 +9,7 @@ from app.database.repositories.users import UsersRepository
 from app.models.user import User
 from app.schemas.user import UserInUpdate, UserResponse, UsersFilters
 from app.services.users import UsersService
-from app.utils import ERROR_RESPONSES, handle_result
+from app.utils import ERROR_RESPONSES
 
 router = APIRouter()
 
@@ -32,7 +32,7 @@ async def read_users(
         users_filters=users_filters,
     )
 
-    return await handle_result(result)
+    return await result.unwrap()
 
 
 @router.get(
@@ -51,7 +51,7 @@ async def read_user_by_id(
 ) -> UserResponse:
     result = await users_service.get_user_by_id(users_repo=users_repo, user_id=user_id)
 
-    return await handle_result(result)
+    return await result.unwrap()
 
 
 @router.patch(
@@ -69,7 +69,7 @@ async def update_user(
     token_user: User = Depends(get_current_user_auth()),
 ) -> UserResponse:
     result = await users_service.update_user(users_repo=users_repo, token_user=token_user, user_in=user_in)
-    return await handle_result(result)
+    return await result.unwrap()
 
 
 @router.delete(
@@ -86,4 +86,4 @@ async def delete_user(
     token_user: User = Depends(get_current_user_auth()),
 ) -> UserResponse:
     result = await users_service.delete_user(users_repo=users_repo, token_user=token_user)
-    return await handle_result(result)
+    return await result.unwrap()

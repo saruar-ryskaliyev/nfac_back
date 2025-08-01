@@ -1,16 +1,17 @@
+from typing import Any, Dict, Union, Optional
 from fastapi import Request, status
 from fastapi.responses import JSONResponse
 
 from app.schemas.message import ErrorResponse
 
-ERROR_RESPONSES = {
+ERROR_RESPONSES: Dict[Union[int, str], Dict[str, Any]] = {
     status.HTTP_400_BAD_REQUEST: {
         "model": ErrorResponse,
         "content": {
             "application/json": {
                 "example": {
                     "app_exception": "Response4XX",
-                    "context": {"reason": "clinet error"},
+                    "context": {"reason": "client error"},
                 }
             }
         },
@@ -49,25 +50,26 @@ async def app_exception_handler(request: Request, exc: AppExceptionCase):
 class AppException:
     class Response4XX(AppExceptionCase):
         """
-        Response4XX
+        4xx error
         """
-
         def __init__(
             self,
-            status_code: status = status.HTTP_400_BAD_REQUEST,
-            context: dict = None,
+            status_code: int = status.HTTP_400_BAD_REQUEST,
+            context: Optional[Dict[str, Any]] = None,
         ):
-            # status_code = status_code
-            AppExceptionCase.__init__(self, status_code, context)
+            # now both the annotation and the default are ints
+            super().__init__(status_code, context or {})
 
     class Response5XX(AppExceptionCase):
         """
-        Response5XX
+        5xx error
         """
-
-        def __init__(self, context: dict = None):
-            status_code = 500
-            AppExceptionCase.__init__(self, status_code, context)
+        def __init__(
+            self,
+            status_code: int = status.HTTP_500_INTERNAL_SERVER_ERROR,
+            context: Optional[Dict[str, Any]] = None,
+        ):
+            super().__init__(status_code, context or {})
 
 
 response_4xx = AppException.Response4XX

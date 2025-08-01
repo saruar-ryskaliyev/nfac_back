@@ -10,14 +10,14 @@ from app.schemas.user import UserTokenData
 TOKEN_TYPE = "bearer"
 JWT_SUBJECT = "access"
 ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 30
+ACCESS_TOKEN_EXPIRE_MINUTES = 1200
 
 
 def create_token(
     *,
     content: dict[str, str],
     secret_key: str,
-    expires_delta: timedelta | None = timedelta(minutes=15),
+    expires_delta: timedelta= timedelta(minutes=15),
 ):
     to_encode = content.copy()
     expire = datetime.now(UTC) + expires_delta
@@ -37,7 +37,7 @@ def create_token_for_user(user: User, secret_key: str) -> UserTokenData:
     return UserTokenData(access_token=created_token, token_type=TOKEN_TYPE)
 
 
-def get_user_from_token(token: str, secret_key: str) -> str:
+def get_user_from_token(token: str, secret_key: str) -> TokenUser:
     try:
         decoded_user = jwt.decode(token, secret_key, algorithms=ALGORITHM)
         return TokenUser(**decoded_user)

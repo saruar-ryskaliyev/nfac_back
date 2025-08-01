@@ -1,21 +1,28 @@
-from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, Text, text
-from sqlalchemy.orm import relationship
+from __future__ import annotations
+from typing import TYPE_CHECKING
+from sqlalchemy import Boolean, ForeignKey, Integer, String, Text, text
+from sqlalchemy.orm import relationship, Mapped, mapped_column
 
 from app.models.common import DateTimeModelMixin
 from app.models.rwmodel import RWModel
 
+if TYPE_CHECKING:
+    from app.models.question import Question
+    from app.models.user import User
+
 
 class Quiz(RWModel, DateTimeModelMixin):
-    __tablename__ = "quizzes"
+    __tablename__: str = "quizzes"
 
-    id = Column(
+    id: Mapped[int] = mapped_column(
         Integer,
         primary_key=True,
         server_default=text("nextval('quizzes_id_seq'::regclass)"),
     )
-    title = Column(String, nullable=False)
-    description = Column(Text, nullable=True)
-    creator_id = Column(Integer, ForeignKey("users.id"), nullable=False)
-    is_public = Column(Boolean, nullable=False, server_default=text("true"))
+    title: Mapped[str] = mapped_column(String, nullable=False)
+    description: Mapped[str] = mapped_column(Text, nullable=True)
+    creator_id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id"), nullable=False)
+    is_public: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default=text("true"))
 
-    creator = relationship("User", back_populates="quizzes")
+    creator: Mapped["User"] = relationship("User", back_populates="quizzes")
+    questions: Mapped[list[Question]] = relationship("Question", back_populates="quiz")

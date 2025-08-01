@@ -10,7 +10,7 @@ from app.database.repositories.users import UsersRepository
 from app.models.user import User
 from app.schemas.user import UserInCreate, UserInSignIn, UserResponse
 from app.services.users import UsersService
-from app.utils import ERROR_RESPONSES, ServiceResult, handle_result
+from app.utils import ERROR_RESPONSES
 
 router = APIRouter()
 
@@ -26,15 +26,15 @@ async def get_user_by_token(
     *,
     users_service: UsersService = Depends(get_service(UsersService)),
     token_user: User = Depends(get_current_user_auth()),
-) -> ServiceResult:
+):
     """
-    Create new users.
+    Get current user info.
     """
     result = await users_service.get_user_by_token(
         token_user=token_user,
     )
 
-    return await handle_result(result)
+    return await result.unwrap()
 
 
 @router.post(
@@ -50,14 +50,14 @@ async def signup_user(
     users_repo: UsersRepository = Depends(get_repository(UsersRepository)),
     user_in: UserInCreate,
     settings: AppSettings = Depends(get_app_settings),
-) -> ServiceResult:
+):
     """
     Signup new users.
     """
     secret_key = str(settings.secret_key.get_secret_value())
     result = await users_service.signup_user(users_repo=users_repo, user_in=user_in, secret_key=secret_key)
 
-    return await handle_result(result)
+    return await result.unwrap()
 
 
 @router.post(
@@ -73,11 +73,11 @@ async def signin_user(
     users_repo: UsersRepository = Depends(get_repository(UsersRepository)),
     user_in: UserInSignIn,
     settings: AppSettings = Depends(get_app_settings),
-) -> ServiceResult:
+):
     """
-    Create new users.
+    Sign in user.
     """
     secret_key = str(settings.secret_key.get_secret_value())
     result = await users_service.signin_user(users_repo=users_repo, user_in=user_in, secret_key=secret_key)
 
-    return await handle_result(result)
+    return await result.unwrap()

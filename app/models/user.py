@@ -1,12 +1,16 @@
-from sqlalchemy import Column, Integer, String, text
-from sqlalchemy.orm import relationship
-from sqlalchemy import Enum as SQLEnum
+from typing import TYPE_CHECKING
 import enum
 
+from sqlalchemy import Integer, String, text
+from sqlalchemy import Enum as SQLEnum
+from sqlalchemy.orm import relationship, Mapped, mapped_column
 from app.core import security
 from app.models.common import DateTimeModelMixin
 from app.models.rwmodel import RWModel
 
+if TYPE_CHECKING:
+    from app.models.quiz import Quiz
+    from app.models.answer import Answer
 
 class UserRole(str, enum.Enum):
     ADMIN = "admin"
@@ -14,25 +18,22 @@ class UserRole(str, enum.Enum):
 
 
 class User(RWModel, DateTimeModelMixin):
-    __tablename__ = "users"
+    __tablename__: str = "users"
 
-    id = Column(
+    id: Mapped[int] = mapped_column(
         Integer,
         primary_key=True,
         server_default=text("nextval('users_id_seq'::regclass)"),
     )
-    username = Column(String(32), nullable=False, unique=True)
-    email = Column(String(256), nullable=False, unique=True)
-    salt = Column(String(255), nullable=False)
-    hashed_password = Column(String(256), nullable=True)
-    total_score = Column(Integer, nullable=False, server_default=text("0"))
+    username: Mapped[str] = mapped_column(String(32), nullable=False, unique=True)
+    email: Mapped[str] = mapped_column(String(256), nullable=False, unique=True)
+    salt: Mapped[str] = mapped_column(String(255), nullable=False)
+    hashed_password: Mapped[str] = mapped_column(String(256), nullable=True)
+    total_score: Mapped[int] = mapped_column(Integer, nullable=False, server_default=text("0"))
 
-    role = Column(
-        SQLEnum(UserRole, name="userrole", values_callable=lambda x: [e.value for e in x]),
-        nullable=False,
-        server_default=text("'student'")
-    )
-    quizzes = relationship("Quiz", back_populates="creator")
+    role: Mapped[UserRole] = mapped_column(SQLEnum(UserRole, name="userrole", values_callable=lambda x: [e.value for e in x]), nullable=False, server_default=text("'student'"))
+    quizzes: Mapped[list["Quiz"]] = relationship("Quiz", back_populates="creator")
+    answers: Mapped[list["Answer"]] = relationship("Answer", back_populates="user")
 
     def check_password(self, password: str) -> bool:
         return security.verify_password(self.salt + password, self.hashed_password)

@@ -45,5 +45,5 @@ class QuizOutData(QuizBase):
 
 class QuizResponse(ApiResponse):
     message: str = "Quiz API Response"
-    data: QuizOutData | list[QuizOutData]
+    data: QuizOutData | list[QuizOutData] | None = None
     detail: dict[str, Any] | None = {"key": "val"}
