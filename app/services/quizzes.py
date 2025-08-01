@@ -6,6 +6,7 @@ from starlette.status import (
 )
 
 from app.database.repositories.quizzes import QuizzesRepository
+from app.database.repositories.tags import TagsRepository
 from app.models.user import User
 from app.schemas.quiz import (
     QuizFilters,
@@ -27,8 +28,10 @@ class QuizzesService(BaseService):
         creator: User,
         quiz_in: QuizInCreate,
         quizzes_repo: QuizzesRepository,
+        tags_repo: TagsRepository,
     ):
-        created_quiz = await quizzes_repo.create_quiz(creator=creator, quiz_in=quiz_in)
+        tags = await tags_repo.get_or_create_tags(tag_names=quiz_in.tag_names)
+        created_quiz = await quizzes_repo.create_quiz(creator=creator, quiz_in=quiz_in, tags=tags)
 
         return QuizResponse(
             message="Quiz created successfully.",
@@ -105,6 +108,7 @@ class QuizzesService(BaseService):
         quiz_id: int,
         quiz_in: QuizInUpdate,
         quizzes_repo: QuizzesRepository,
+        tags_repo: TagsRepository,
     ):
         quiz = await quizzes_repo.get_quiz_by_id(quiz_id=quiz_id)
         if not quiz:
@@ -113,7 +117,11 @@ class QuizzesService(BaseService):
                 context={"reason": "Quiz not found"},
             )
 
-        updated_quiz = await quizzes_repo.update_quiz(quiz=quiz, quiz_in=quiz_in)
+        tags = None
+        if quiz_in.tag_names is not None:
+            tags = await tags_repo.get_or_create_tags(tag_names=quiz_in.tag_names)
+
+        updated_quiz = await quizzes_repo.update_quiz(quiz=quiz, quiz_in=quiz_in, tags=tags)
 
         return QuizResponse(
             message="Quiz updated successfully.",

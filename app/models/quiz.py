@@ -10,6 +10,7 @@ if TYPE_CHECKING:
     from app.models.question import Question
     from app.models.user import User
     from app.models.quiz_attempt import QuizAttempt
+    from app.models.tag import Tag
 
 
 class Quiz(RWModel, DateTimeModelMixin):
@@ -28,3 +29,4 @@ class Quiz(RWModel, DateTimeModelMixin):
     creator: Mapped["User"] = relationship("User", back_populates="quizzes")
     questions: Mapped[list[Question]] = relationship("Question", back_populates="quiz")
     attempts: Mapped[list["QuizAttempt"]] = relationship("QuizAttempt", back_populates="quiz")
+    tags: Mapped[list["Tag"]] = relationship("Tag", secondary="quiz_tags", back_populates="quizzes")

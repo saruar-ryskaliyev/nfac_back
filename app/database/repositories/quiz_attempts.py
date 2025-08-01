@@ -109,3 +109,15 @@ class QuizAttemptsRepository(BaseRepository):
         result = raw_result.fetchone()
         
         return result.QuizAttempt if result is not None else None
+    
+    @db_error_handler
+    async def get_user_attempts(self, *, user_id: int) -> list[QuizAttempt]:
+        """Get all attempts made by a user across all quizzes"""
+        query = select(QuizAttempt).where(
+            and_(QuizAttempt.user_id == user_id, QuizAttempt.deleted_at.is_(None))
+        ).order_by(QuizAttempt.created_at.desc())
+        
+        raw_result = await self.connection.execute(query)
+        results = raw_result.fetchall()
+        
+        return [result.QuizAttempt for result in results] if results else []

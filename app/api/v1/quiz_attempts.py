@@ -243,3 +243,42 @@ async def get_user_attempts_for_quiz(
     )
 
     return await result.unwrap()
+
+
+@router.get(
+    path="/attempts",
+    status_code=HTTP_200_OK,
+    response_model=AttemptResponse,
+    responses=ERROR_RESPONSES,
+    name="attempts:get_all_user_attempts",
+    tags=["Quiz Attempts"],
+    summary="Get all attempts by the current user",
+    description="""
+    **Retrieve all quiz attempts made by the authenticated user.**
+    
+    This endpoint:
+    - Returns all attempts made by the current user across all quizzes
+    - Useful for showing user's complete attempt history
+    - Includes both finished and unfinished attempts
+    
+    **Requirements:**
+    - User must be authenticated
+    
+    **Response includes:**
+    - Array of attempt objects
+    - Each attempt contains: ID, quiz ID, attempt number, timestamps, scores
+    """,
+)
+async def get_all_user_attempts(
+    *,
+    attempts_service: QuizAttemptsService = Depends(get_service(QuizAttemptsService)),
+    attempts_repo: QuizAttemptsRepository = Depends(get_repository(QuizAttemptsRepository)),
+    current_user: User = Depends(get_current_user_auth()),
+):
+    result = await attempts_service.get_all_user_attempts(
+        user=current_user,
+        attempts_repo=attempts_repo,
+    )
+
+    return await result.unwrap()
+

@@ -6,6 +6,7 @@ from app.api.dependencies.database import get_repository
 from app.api.dependencies.quizzes import get_quiz_filters
 from app.api.dependencies.service import get_service
 from app.database.repositories.quizzes import QuizzesRepository
+from app.database.repositories.tags import TagsRepository
 from app.models.user import User
 from app.schemas.quiz import QuizFilters, QuizInCreate, QuizInUpdate, QuizResponse
 from app.services.quizzes import QuizzesService
@@ -25,6 +26,7 @@ async def create_quiz(
     *,
     quizzes_service: QuizzesService = Depends(get_service(QuizzesService)),
     quizzes_repo: QuizzesRepository = Depends(get_repository(QuizzesRepository)),
+    tags_repo: TagsRepository = Depends(get_repository(TagsRepository)),
     quiz_in: QuizInCreate,
     current_user: User = Depends(get_current_admin_user()),
 ):
@@ -35,6 +37,7 @@ async def create_quiz(
         creator=current_user,
         quiz_in=quiz_in,
         quizzes_repo=quizzes_repo,
+        tags_repo=tags_repo,
     )
 
     return await result.unwrap()
@@ -65,30 +68,6 @@ async def get_all_quizzes(
 
 
 @router.get(
-    path="/{quiz_id}",
-    status_code=HTTP_200_OK,
-    response_model=QuizResponse,
-    responses=ERROR_RESPONSES,
-    name="quizzes:get_by_id",
-)
-async def get_quiz_by_id(
-    *,
-    quiz_id: int,
-    quizzes_service: QuizzesService = Depends(get_service(QuizzesService)),
-    quizzes_repo: QuizzesRepository = Depends(get_repository(QuizzesRepository)),
-):
-    """
-    Get a quiz by ID.
-    """
-    result = await quizzes_service.get_quiz_by_id(
-        quiz_id=quiz_id,
-        quizzes_repo=quizzes_repo,
-    )
-
-    return await result.unwrap()
-
-
-@router.get(
     path="/search",
     status_code=HTTP_200_OK,
     response_model=QuizResponse,
@@ -106,6 +85,30 @@ async def search_quizzes(
     """
     result = await quizzes_service.search_quizzes(
         quiz_filters=quiz_filters,
+        quizzes_repo=quizzes_repo,
+    )
+
+    return await result.unwrap()
+
+
+@router.get(
+    path="/{quiz_id}",
+    status_code=HTTP_200_OK,
+    response_model=QuizResponse,
+    responses=ERROR_RESPONSES,
+    name="quizzes:get_by_id",
+)
+async def get_quiz_by_id(
+    *,
+    quiz_id: int,
+    quizzes_service: QuizzesService = Depends(get_service(QuizzesService)),
+    quizzes_repo: QuizzesRepository = Depends(get_repository(QuizzesRepository)),
+):
+    """
+    Get a quiz by ID.
+    """
+    result = await quizzes_service.get_quiz_by_id(
+        quiz_id=quiz_id,
         quizzes_repo=quizzes_repo,
     )
 
@@ -151,6 +154,7 @@ async def update_quiz(
     quiz_in: QuizInUpdate,
     quizzes_service: QuizzesService = Depends(get_service(QuizzesService)),
     quizzes_repo: QuizzesRepository = Depends(get_repository(QuizzesRepository)),
+    tags_repo: TagsRepository = Depends(get_repository(TagsRepository)),
     current_user: User = Depends(get_current_admin_user()),
 ):
     """
@@ -160,6 +164,7 @@ async def update_quiz(
         quiz_id=quiz_id,
         quiz_in=quiz_in,
         quizzes_repo=quizzes_repo,
+        tags_repo=tags_repo,
     )
 
     return await result.unwrap()

@@ -163,3 +163,22 @@ class QuizAttemptsService(BaseService):
             message="User attempts retrieved successfully",
             data=[AttemptOutData.model_validate(attempt) for attempt in attempts],
         )
+
+
+    @return_service
+    async def get_all_user_attempts(
+        self,
+        user: User,
+        attempts_repo: QuizAttemptsRepository,
+    ):
+        """Get all attempts by user across all quizzes"""
+
+        attempts = await attempts_repo.get_user_attempts(user_id=user.id)
+
+        return AttemptResponse(
+            message="User attempts retrieved successfully",
+            data=[AttemptOutData.model_validate(attempt) for attempt in attempts],
+        )
+    
+
+    

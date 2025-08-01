@@ -17,6 +17,9 @@ from app.models.question import Question
 from app.models.answer import Answer
 from app.models.quiz_attempt import QuizAttempt
 from app.models.option import Option
+from app.models.tag import Tag
+
+
 
 sys.path.append(str(pathlib.Path(__file__).resolve().parents[3]))
 
