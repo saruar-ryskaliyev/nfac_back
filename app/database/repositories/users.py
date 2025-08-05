@@ -4,6 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.database.repositories.base import BaseRepository, db_error_handler
 from app.models.user import User
 from app.schemas.user import UserInCreate, UserInDB, UserInUpdate
+from datetime import timezone, datetime
 
 
 class UsersRepository(BaseRepository):
@@ -88,7 +89,7 @@ class UsersRepository(BaseRepository):
 
     @db_error_handler
     async def delete_user(self, *, user: User) -> User:
-        user.deleted_at = func.now()
+        user.deleted_at = datetime.now(timezone.utc)
 
         self.connection.add(user)
         await self.connection.commit()

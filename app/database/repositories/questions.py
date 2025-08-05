@@ -1,10 +1,11 @@
-from sqlalchemy import and_, func, select
+from sqlalchemy import and_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.database.repositories.base import BaseRepository, db_error_handler
 from app.models.question import Question
 from app.schemas.question import QuestionInCreate, QuestionInUpdate
+from datetime import datetime, timezone
 
 
 class QuestionsRepository(BaseRepository):
@@ -79,7 +80,7 @@ class QuestionsRepository(BaseRepository):
 
     @db_error_handler
     async def delete_question(self, *, question: Question) -> Question:
-        question.deleted_at = func.now()
+        question.deleted_at = datetime.now(timezone.utc)
 
         await self.connection.commit()
         await self.connection.refresh(question)

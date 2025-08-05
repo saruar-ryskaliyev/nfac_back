@@ -171,3 +171,17 @@ class UsersService(BaseService):
             message=constant.SUCCESS_DELETE_USER,
             data=UserOutData.model_validate(deleted_user),
         )
+
+
+    @return_service
+    async def signout_user(
+        self,
+        token_user: User,
+        users_repo: UsersRepository = Depends(get_repository(UsersRepository)),
+    ):
+        result = await users_repo.signout_user(user=token_user)
+
+        return UserResponse(
+            message=constant.SUCCESS_SIGN_OUT,
+            data=result,
+        )

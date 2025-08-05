@@ -5,6 +5,7 @@ from sqlalchemy.orm import selectinload
 from app.database.repositories.base import BaseRepository, db_error_handler
 from app.models.tag import Tag
 from app.schemas.tag import TagInCreate, TagInUpdate
+from datetime import datetime, timezone
 
 
 class TagsRepository(BaseRepository):
@@ -24,13 +25,16 @@ class TagsRepository(BaseRepository):
         return tag
 
     @db_error_handler
-    async def get_tag_by_id(self, *, tag_id: int) -> Tag:
+    async def get_tag_by_id(self, *, tag_id: int) -> Tag | None:
         query = select(Tag).where(and_(Tag.id == tag_id, Tag.deleted_at.is_(None)))
 
         raw_result = await self.connection.execute(query)
         result = raw_result.fetchone()
 
-        return result.Tag if result is not None else result
+        if result is None:
+            return None
+
+        return result.Tag 
 
     @db_error_handler
     async def get_tag_by_name(self, *, name: str) -> Tag | None:
@@ -74,7 +78,7 @@ class TagsRepository(BaseRepository):
 
     @db_error_handler
     async def delete_tag(self, *, tag: Tag) -> Tag:
-        tag.deleted_at = func.now()
+        tag.deleted_at = datetime.now(timezone.utc)
 
         await self.connection.commit()
         await self.connection.refresh(tag)

@@ -7,6 +7,7 @@ from app.models.quiz import Quiz
 from app.models.tag import Tag
 from app.models.user import User
 from app.schemas.quiz import QuizInCreate, QuizInUpdate
+from datetime import datetime, timezone
 
 
 class QuizzesRepository(BaseRepository):
@@ -14,7 +15,7 @@ class QuizzesRepository(BaseRepository):
         super().__init__(conn)
 
     @db_error_handler
-    async def create_quiz(self, *, creator: User, quiz_in: QuizInCreate, tags: list[Tag] = None) -> Quiz:
+    async def create_quiz(self, *, creator: User, quiz_in: QuizInCreate, tags: list[Tag] | None = None) -> Quiz:
         quiz = Quiz(
             title=quiz_in.title,
             description=quiz_in.description,
@@ -32,13 +33,16 @@ class QuizzesRepository(BaseRepository):
         return quiz
 
     @db_error_handler
-    async def get_quiz_by_id(self, *, quiz_id: int) -> Quiz:
+    async def get_quiz_by_id(self, *, quiz_id: int) -> Quiz | None:
         query = select(Quiz).options(selectinload(Quiz.tags)).where(and_(Quiz.id == quiz_id, Quiz.deleted_at.is_(None)))
 
         raw_result = await self.connection.execute(query)
         result = raw_result.fetchone()
 
-        return result.Quiz if result is not None else result
+        if result is None:
+            return None
+
+        return result.Quiz
 
     @db_error_handler
     async def get_all_quizzes(self, *, skip: int = 0, limit: int = 100) -> list[Quiz]:
@@ -84,7 +88,7 @@ class QuizzesRepository(BaseRepository):
         return [result.Quiz for result in results]
 
     @db_error_handler
-    async def update_quiz(self, *, quiz: Quiz, quiz_in: QuizInUpdate, tags: list[Tag] = None) -> Quiz:
+    async def update_quiz(self, *, quiz: Quiz, quiz_in: QuizInUpdate, tags: list[Tag] | None = None) -> Quiz:
         if quiz_in.title is not None:
             quiz.title = quiz_in.title
         if quiz_in.description is not None:
@@ -101,7 +105,7 @@ class QuizzesRepository(BaseRepository):
 
     @db_error_handler
     async def delete_quiz(self, *, quiz: Quiz) -> Quiz:
-        quiz.deleted_at = func.now()
+        quiz.deleted_at = datetime.now(timezone.utc)
 
         await self.connection.commit()
         await self.connection.refresh(quiz)

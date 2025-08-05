@@ -4,6 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.database.repositories.base import BaseRepository, db_error_handler
 from app.models.option import Option
 from app.schemas.option import OptionInCreate, OptionInUpdate
+from datetime import datetime, timezone
 
 
 class OptionsRepository(BaseRepository):
@@ -80,13 +81,13 @@ class OptionsRepository(BaseRepository):
         results = raw_result.fetchall()
 
         for result in results:
-            result.Option.deleted_at = func.now()
+            result.Option.deleted_at = datetime.now(timezone.utc)
 
         await self.connection.commit()
 
     @db_error_handler
     async def delete_option(self, *, option: Option) -> Option:
-        option.deleted_at = func.now()
+        option.deleted_at = datetime.now(timezone.utc)
 
         await self.connection.commit()
         await self.connection.refresh(option)
