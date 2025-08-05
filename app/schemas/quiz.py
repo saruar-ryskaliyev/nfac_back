@@ -4,6 +4,7 @@ from typing import Any
 from pydantic import BaseModel, ConfigDict
 
 from app.schemas.message import ApiResponse
+from app.schemas.pagination import PaginationParams, PaginatedResponse
 from app.schemas.tag import TagOutData
 
 
@@ -37,10 +38,9 @@ class QuizInUpdate(BaseModel):
     tag_names: list[str] | None = None
 
 
-class QuizFilters(BaseModel):
-    skip: int | None = 0
-    limit: int | None = 100
+class QuizFilters(PaginationParams):
     tag: str | None = None
+    search: str | None = None
 
 
 class QuizOutData(QuizBase):
@@ -49,5 +49,13 @@ class QuizOutData(QuizBase):
 
 class QuizResponse(ApiResponse):
     message: str = "Quiz API Response"
-    data: QuizOutData | list[QuizOutData] | None = None
+    data: QuizOutData | list[QuizOutData] | dict[str, Any] | None = None
     detail: dict[str, Any] | None = {"key": "val"}
+
+
+class QuizPaginatedResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    
+    message: str = "Quiz API Response"
+    data: PaginatedResponse[QuizOutData] | dict[str, Any] | None = None
+    detail: dict[str, Any] | None = None

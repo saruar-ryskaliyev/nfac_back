@@ -8,7 +8,7 @@ from app.api.dependencies.service import get_service
 from app.database.repositories.quizzes import QuizzesRepository
 from app.database.repositories.tags import TagsRepository
 from app.models.user import User
-from app.schemas.quiz import QuizFilters, QuizInCreate, QuizInUpdate, QuizResponse
+from app.schemas.quiz import QuizFilters, QuizInCreate, QuizInUpdate, QuizResponse, QuizPaginatedResponse
 from app.services.quizzes import QuizzesService
 from app.utils import ERROR_RESPONSES
 
@@ -70,7 +70,7 @@ async def get_all_quizzes(
 @router.get(
     path="/search",
     status_code=HTTP_200_OK,
-    response_model=QuizResponse,
+    response_model=QuizPaginatedResponse,
     responses=ERROR_RESPONSES,
     name="quizzes:search",
 )
@@ -81,7 +81,10 @@ async def search_quizzes(
     quiz_filters: QuizFilters = Depends(get_quiz_filters),
 ):
     """
-    Search quizzes by tag.
+    Search quizzes by text (title/description) or tag. 
+    - Use 'search' parameter for text search in quiz titles and descriptions
+    - Use 'tag' parameter for tag-based search
+    - If no parameters provided, returns all public quizzes
     """
     result = await quizzes_service.search_quizzes(
         quiz_filters=quiz_filters,
@@ -118,7 +121,7 @@ async def get_quiz_by_id(
 @router.get(
     path="/user/{user_id}",
     status_code=HTTP_200_OK,
-    response_model=QuizResponse,
+    response_model=QuizPaginatedResponse,
     responses=ERROR_RESPONSES,
     name="quizzes:get_by_user",
 )

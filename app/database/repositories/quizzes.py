@@ -1,4 +1,4 @@
-from sqlalchemy import and_, func, select
+from sqlalchemy import and_, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -7,12 +7,29 @@ from app.models.quiz import Quiz
 from app.models.tag import Tag
 from app.models.user import User
 from app.schemas.quiz import QuizInCreate, QuizInUpdate
+from app.schemas.pagination import PaginationMeta
 from datetime import datetime, timezone
 
 
 class QuizzesRepository(BaseRepository):
     def __init__(self, conn: AsyncSession) -> None:
         super().__init__(conn)
+    
+    def _create_pagination_meta(self, total: int, skip: int, limit: int) -> PaginationMeta:
+        current_page = (skip // limit) + 1
+        total_pages = (total + limit - 1) // limit
+        has_next = skip + limit < total
+        has_previous = skip > 0
+        
+        return PaginationMeta(
+            total=total,
+            skip=skip,
+            limit=limit,
+            has_next=has_next,
+            has_previous=has_previous,
+            total_pages=total_pages,
+            current_page=current_page,
+        )
 
     @db_error_handler
     async def create_quiz(self, *, creator: User, quiz_in: QuizInCreate, tags: list[Tag] | None = None) -> Quiz:
@@ -31,6 +48,34 @@ class QuizzesRepository(BaseRepository):
         await self.connection.refresh(quiz, ["tags"])
 
         return quiz
+
+    @db_error_handler
+    async def count_all_quizzes(self) -> int:
+        query = select(func.count(Quiz.id)).where(Quiz.deleted_at.is_(None))
+        raw_result = await self.connection.execute(query)
+        return raw_result.scalar() or 0
+
+    @db_error_handler
+    async def count_public_quizzes(self) -> int:
+        query = select(func.count(Quiz.id)).where(and_(Quiz.is_public, Quiz.deleted_at.is_(None)))
+        raw_result = await self.connection.execute(query)
+        return raw_result.scalar() or 0
+
+    @db_error_handler
+    async def count_quizzes_by_creator(self, *, creator_id: int) -> int:
+        query = select(func.count(Quiz.id)).where(and_(Quiz.creator_id == creator_id, Quiz.deleted_at.is_(None)))
+        raw_result = await self.connection.execute(query)
+        return raw_result.scalar() or 0
+
+    @db_error_handler
+    async def count_quizzes_by_tag(self, *, tag: str) -> int:
+        query = (
+            select(func.count(Quiz.id))
+            .join(Quiz.tags)
+            .where(and_(Tag.name.ilike(f"%{tag}%"), Quiz.is_public, Quiz.deleted_at.is_(None)))
+        )
+        raw_result = await self.connection.execute(query)
+        return raw_result.scalar() or 0
 
     @db_error_handler
     async def get_quiz_by_id(self, *, quiz_id: int) -> Quiz | None:
@@ -86,6 +131,84 @@ class QuizzesRepository(BaseRepository):
         results = raw_result.fetchall()
 
         return [result.Quiz for result in results]
+
+    @db_error_handler
+    async def get_all_quizzes_paginated(self, *, skip: int = 0, limit: int = 20) -> tuple[list[Quiz], PaginationMeta]:
+        total = await self.count_all_quizzes()
+        quizzes = await self.get_all_quizzes(skip=skip, limit=limit)
+        meta = self._create_pagination_meta(total, skip, limit)
+        return quizzes, meta
+
+    @db_error_handler
+    async def get_public_quizzes_paginated(self, *, skip: int = 0, limit: int = 20) -> tuple[list[Quiz], PaginationMeta]:
+        total = await self.count_public_quizzes()
+        quizzes = await self.get_public_quizzes(skip=skip, limit=limit)
+        meta = self._create_pagination_meta(total, skip, limit)
+        return quizzes, meta
+
+    @db_error_handler
+    async def get_quizzes_by_creator_paginated(self, *, creator_id: int, skip: int = 0, limit: int = 20) -> tuple[list[Quiz], PaginationMeta]:
+        total = await self.count_quizzes_by_creator(creator_id=creator_id)
+        quizzes = await self.get_quizzes_by_creator(creator_id=creator_id, skip=skip, limit=limit)
+        meta = self._create_pagination_meta(total, skip, limit)
+        return quizzes, meta
+
+    @db_error_handler
+    async def search_quizzes_by_tag_paginated(self, *, tag: str, skip: int = 0, limit: int = 20) -> tuple[list[Quiz], PaginationMeta]:
+        total = await self.count_quizzes_by_tag(tag=tag)
+        quizzes = await self.search_quizzes_by_tag(tag=tag, skip=skip, limit=limit)
+        meta = self._create_pagination_meta(total, skip, limit)
+        return quizzes, meta
+
+    @db_error_handler
+    async def count_quizzes_by_text_search(self, *, search_text: str, public_only: bool = True) -> int:
+        conditions = [
+            or_(
+                Quiz.title.ilike(f"%{search_text}%"),
+                Quiz.description.ilike(f"%{search_text}%")
+            ),
+            Quiz.deleted_at.is_(None)
+        ]
+        
+        if public_only:
+            conditions.append(Quiz.is_public)
+        
+        query = select(func.count(Quiz.id)).where(and_(*conditions))
+        raw_result = await self.connection.execute(query)
+        return raw_result.scalar() or 0
+
+    @db_error_handler
+    async def search_quizzes_by_text(self, *, search_text: str, public_only: bool = True, skip: int = 0, limit: int = 100) -> list[Quiz]:
+        conditions = [
+            or_(
+                Quiz.title.ilike(f"%{search_text}%"),
+                Quiz.description.ilike(f"%{search_text}%")
+            ),
+            Quiz.deleted_at.is_(None)
+        ]
+        
+        if public_only:
+            conditions.append(Quiz.is_public)
+        
+        query = (
+            select(Quiz)
+            .options(selectinload(Quiz.tags))
+            .where(and_(*conditions))
+            .offset(skip)
+            .limit(limit)
+        )
+        
+        raw_result = await self.connection.execute(query)
+        results = raw_result.fetchall()
+        
+        return [result.Quiz for result in results]
+
+    @db_error_handler
+    async def search_quizzes_by_text_paginated(self, *, search_text: str, public_only: bool = True, skip: int = 0, limit: int = 20) -> tuple[list[Quiz], PaginationMeta]:
+        total = await self.count_quizzes_by_text_search(search_text=search_text, public_only=public_only)
+        quizzes = await self.search_quizzes_by_text(search_text=search_text, public_only=public_only, skip=skip, limit=limit)
+        meta = self._create_pagination_meta(total, skip, limit)
+        return quizzes, meta
 
     @db_error_handler
     async def update_quiz(self, *, quiz: Quiz, quiz_in: QuizInUpdate, tags: list[Tag] | None = None) -> Quiz:

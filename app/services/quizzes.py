@@ -1,7 +1,6 @@
 import logging
 
 from starlette.status import (
-    HTTP_400_BAD_REQUEST,
     HTTP_404_NOT_FOUND,
 )
 
@@ -14,6 +13,7 @@ from app.schemas.quiz import (
     QuizInUpdate,
     QuizOutData,
     QuizResponse,
+    QuizPaginatedResponse,
 )
 from app.services.base import BaseService
 from app.utils import response_4xx, return_service
@@ -62,11 +62,14 @@ class QuizzesService(BaseService):
         quiz_filters: QuizFilters,
         quizzes_repo: QuizzesRepository,
     ):
-        quizzes = await quizzes_repo.get_public_quizzes(skip=quiz_filters.skip, limit=quiz_filters.limit)
+        quizzes, meta = await quizzes_repo.get_public_quizzes_paginated(skip=quiz_filters.skip, limit=quiz_filters.limit)
 
         return QuizResponse(
             message="Quizzes retrieved successfully.",
-            data=[QuizOutData.model_validate(quiz) for quiz in quizzes],
+            data={
+                "data": [QuizOutData.model_validate(quiz) for quiz in quizzes],
+                "meta": meta.model_dump()
+            },
         )
 
     @return_service
@@ -75,17 +78,22 @@ class QuizzesService(BaseService):
         quiz_filters: QuizFilters,
         quizzes_repo: QuizzesRepository,
     ):
-        if not quiz_filters.tag:
-            return response_4xx(
-                status_code=HTTP_400_BAD_REQUEST,
-                context={"reason": "Tag parameter is required for search"},
-            )
+        if quiz_filters.search:
+            quizzes, meta = await quizzes_repo.search_quizzes_by_text_paginated(search_text=quiz_filters.search, skip=quiz_filters.skip, limit=quiz_filters.limit)
+            message = f"Quizzes searched successfully for '{quiz_filters.search}'."
+        elif quiz_filters.tag:
+            quizzes, meta = await quizzes_repo.search_quizzes_by_tag_paginated(tag=quiz_filters.tag, skip=quiz_filters.skip, limit=quiz_filters.limit)
+            message = f"Quizzes searched successfully for tag '{quiz_filters.tag}'."
+        else:
+            quizzes, meta = await quizzes_repo.get_all_quizzes_paginated(skip=quiz_filters.skip, limit=quiz_filters.limit)
+            message = "All public quizzes retrieved successfully."
 
-        quizzes = await quizzes_repo.search_quizzes_by_tag(tag=quiz_filters.tag, skip=quiz_filters.skip, limit=quiz_filters.limit)
-
-        return QuizResponse(
-            message="Quizzes searched successfully.",
-            data=[QuizOutData.model_validate(quiz) for quiz in quizzes],
+        return QuizPaginatedResponse(
+            message=message,
+            data={
+                "data": [QuizOutData.model_validate(quiz) for quiz in quizzes],
+                "meta": meta.model_dump()
+            },
         )
 
     @return_service
@@ -95,11 +103,14 @@ class QuizzesService(BaseService):
         quiz_filters: QuizFilters,
         quizzes_repo: QuizzesRepository,
     ):
-        quizzes = await quizzes_repo.get_quizzes_by_creator(creator_id=user_id, skip=quiz_filters.skip, limit=quiz_filters.limit)
+        quizzes, meta = await quizzes_repo.get_quizzes_by_creator_paginated(creator_id=user_id, skip=quiz_filters.skip, limit=quiz_filters.limit)
 
-        return QuizResponse(
+        return QuizPaginatedResponse(
             message="User quizzes retrieved successfully.",
-            data=[QuizOutData.model_validate(quiz) for quiz in quizzes],
+            data={
+                "data": [QuizOutData.model_validate(quiz) for quiz in quizzes],
+                "meta": meta.model_dump()
+            },
         )
 
     @return_service
