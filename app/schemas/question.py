@@ -31,6 +31,13 @@ class QuestionInCreate(BaseModel):
     options: list[OptionInCreate] = []
 
 
+class QuestionInQuizCreate(BaseModel):
+    question_text: str
+    question_type: Literal["single", "multiple", "text"]
+    points: int = 1
+    options: list[OptionInCreate] = []
+
+
 class QuestionInUpdate(BaseModel):
     question_text: str | None = None
     question_type: Literal["single", "multiple", "text"] | None = None

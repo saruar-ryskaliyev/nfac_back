@@ -6,7 +6,7 @@ from pydantic import BaseModel, ConfigDict
 from app.schemas.message import ApiResponse
 from app.schemas.pagination import PaginationParams, PaginatedResponse
 from app.schemas.tag import TagOutData
-from app.schemas.question import QuestionOutData
+from app.schemas.question import QuestionOutData, QuestionInQuizCreate
 
 
 class QuizBase(BaseModel):
@@ -30,6 +30,7 @@ class QuizInCreate(BaseModel):
     description: str | None = None
     is_public: bool = True
     tag_names: list[str]
+    questions: list[QuestionInQuizCreate] = []
 
 
 class QuizInUpdate(BaseModel):

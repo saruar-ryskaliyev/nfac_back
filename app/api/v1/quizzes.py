@@ -7,6 +7,8 @@ from app.api.dependencies.quizzes import get_quiz_filters
 from app.api.dependencies.service import get_service
 from app.database.repositories.quizzes import QuizzesRepository
 from app.database.repositories.tags import TagsRepository
+from app.database.repositories.questions import QuestionsRepository
+from app.database.repositories.options import OptionsRepository
 from app.models.user import User
 from app.schemas.quiz import QuizFilters, QuizInCreate, QuizInUpdate, QuizResponse, QuizDetailResponse, QuizPaginatedResponse
 from app.services.quizzes import QuizzesService
@@ -27,17 +29,21 @@ async def create_quiz(
     quizzes_service: QuizzesService = Depends(get_service(QuizzesService)),
     quizzes_repo: QuizzesRepository = Depends(get_repository(QuizzesRepository)),
     tags_repo: TagsRepository = Depends(get_repository(TagsRepository)),
+    questions_repo: QuestionsRepository = Depends(get_repository(QuestionsRepository)),
+    options_repo: OptionsRepository = Depends(get_repository(OptionsRepository)),
     quiz_in: QuizInCreate,
     current_user: User = Depends(get_current_admin_user()),
 ):
     """
-    Create a new quiz.
+    Create a new quiz with optional questions and options.
     """
     result = await quizzes_service.create_quiz(
         creator=current_user,
         quiz_in=quiz_in,
         quizzes_repo=quizzes_repo,
         tags_repo=tags_repo,
+        questions_repo=questions_repo,
+        options_repo=options_repo,
     )
 
     return await result.unwrap()

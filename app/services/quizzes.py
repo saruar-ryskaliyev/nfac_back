@@ -6,6 +6,9 @@ from starlette.status import (
 
 from app.database.repositories.quizzes import QuizzesRepository
 from app.database.repositories.tags import TagsRepository
+from app.database.repositories.questions import QuestionsRepository
+from app.database.repositories.options import OptionsRepository
+from app.schemas.question import QuestionInCreate
 from app.models.user import User
 from app.schemas.quiz import (
     QuizFilters,
@@ -31,9 +34,31 @@ class QuizzesService(BaseService):
         quiz_in: QuizInCreate,
         quizzes_repo: QuizzesRepository,
         tags_repo: TagsRepository,
+        questions_repo: QuestionsRepository | None = None,
+        options_repo: OptionsRepository | None = None,
     ):
         tags = await tags_repo.get_or_create_tags(tag_names=quiz_in.tag_names)
         created_quiz = await quizzes_repo.create_quiz(creator=creator, quiz_in=quiz_in, tags=tags)
+
+        if quiz_in.questions and questions_repo and options_repo:
+            for question_data in quiz_in.questions:
+                question_in_create = QuestionInCreate(
+                    quiz_id=created_quiz.id,
+                    question_text=question_data.question_text,
+                    question_type=question_data.question_type,
+                    points=question_data.points,
+                    options=question_data.options
+                )
+                created_question = await questions_repo.create_question(question_in=question_in_create)
+                
+                if question_data.options:
+                    await options_repo.create_options_for_question(
+                        options_in=question_data.options, 
+                        question_id=created_question.id
+                    )
+            
+            await quizzes_repo.connection.commit()
+            created_quiz = await quizzes_repo.get_quiz_by_id(quiz_id=created_quiz.id)
 
         return QuizResponse(
             message="Quiz created successfully.",
