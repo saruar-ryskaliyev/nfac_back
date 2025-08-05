@@ -8,7 +8,7 @@ from app.api.dependencies.service import get_service
 from app.database.repositories.quizzes import QuizzesRepository
 from app.database.repositories.tags import TagsRepository
 from app.models.user import User
-from app.schemas.quiz import QuizFilters, QuizInCreate, QuizInUpdate, QuizResponse, QuizPaginatedResponse
+from app.schemas.quiz import QuizFilters, QuizInCreate, QuizInUpdate, QuizResponse, QuizDetailResponse, QuizPaginatedResponse
 from app.services.quizzes import QuizzesService
 from app.utils import ERROR_RESPONSES
 
@@ -97,7 +97,7 @@ async def search_quizzes(
 @router.get(
     path="/{quiz_id}",
     status_code=HTTP_200_OK,
-    response_model=QuizResponse,
+    response_model=QuizDetailResponse,
     responses=ERROR_RESPONSES,
     name="quizzes:get_by_id",
 )
@@ -108,7 +108,7 @@ async def get_quiz_by_id(
     quizzes_repo: QuizzesRepository = Depends(get_repository(QuizzesRepository)),
 ):
     """
-    Get a quiz by ID.
+    Get a quiz by ID with all questions and their options.
     """
     result = await quizzes_service.get_quiz_by_id(
         quiz_id=quiz_id,

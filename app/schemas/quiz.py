@@ -6,6 +6,7 @@ from pydantic import BaseModel, ConfigDict
 from app.schemas.message import ApiResponse
 from app.schemas.pagination import PaginationParams, PaginatedResponse
 from app.schemas.tag import TagOutData
+from app.schemas.question import QuestionOutData
 
 
 class QuizBase(BaseModel):
@@ -47,9 +48,19 @@ class QuizOutData(QuizBase):
     pass
 
 
+class QuizDetailData(QuizBase):
+    questions: list[QuestionOutData] = []
+
+
 class QuizResponse(ApiResponse):
     message: str = "Quiz API Response"
     data: QuizOutData | list[QuizOutData] | dict[str, Any] | None = None
+    detail: dict[str, Any] | None = {"key": "val"}
+
+
+class QuizDetailResponse(ApiResponse):
+    message: str = "Quiz API Response"
+    data: QuizDetailData | None = None
     detail: dict[str, Any] | None = {"key": "val"}
 
 

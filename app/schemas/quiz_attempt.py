@@ -4,6 +4,8 @@ from typing import Any
 from pydantic import BaseModel, ConfigDict, Field
 
 from app.schemas.message import ApiResponse
+from app.schemas.question import QuestionOutData
+from app.schemas.answer import AnswerOutData
 
 
 class AttemptCreate(BaseModel):
@@ -156,3 +158,31 @@ class AttemptSubmission(BaseModel):
     
     # No additional fields needed - just triggers the finish/grading process
     # The empty body serves as an explicit action to finalize the attempt
+
+
+class AttemptDetailData(AttemptBase):
+    """Enhanced attempt data with questions, options, and user answers"""
+    questions: list[QuestionOutData] = Field(
+        default_factory=list,
+        description="List of questions in this quiz with their options"
+    )
+    user_answers: list[AnswerOutData] = Field(
+        default_factory=list,
+        description="User's submitted answers for this attempt"
+    )
+
+
+class AttemptDetailResponse(ApiResponse):
+    """API response for detailed attempt information including questions and answers"""
+    message: str = Field(
+        default="Attempt details retrieved successfully",
+        description="Response message describing the operation result"
+    )
+    data: AttemptDetailData | None = Field(
+        None,
+        description="Detailed attempt data with questions and user answers"
+    )
+    detail: dict[str, Any] | None = Field(
+        None,
+        description="Additional details about the response"
+    )

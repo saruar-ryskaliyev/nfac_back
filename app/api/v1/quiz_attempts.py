@@ -21,7 +21,7 @@ from app.database.repositories.quizzes import QuizzesRepository
 from app.database.repositories.questions import QuestionsRepository
 from app.database.repositories.answers import AnswersRepository
 from app.models.user import User
-from app.schemas.quiz_attempt import AttemptResponse, AttemptSubmission
+from app.schemas.quiz_attempt import AttemptResponse, AttemptSubmission, AttemptDetailResponse
 from app.schemas.answer import QuizResultResponse
 from app.services.quiz_attempts import QuizAttemptsService
 from app.utils import ERROR_RESPONSES
@@ -132,6 +132,63 @@ async def submit_quiz_attempt(
     result = await attempts_service.submit_quiz_attempt(
         attempt_id=attempt_id,
         user=current_user,
+        attempts_repo=attempts_repo,
+        questions_repo=questions_repo,
+        answers_repo=answers_repo,
+    )
+
+    return await result.unwrap()
+
+
+@router.get(
+    path="/attempts/{attempt_id}/details",
+    status_code=HTTP_200_OK,
+    response_model=AttemptDetailResponse,
+    responses=ERROR_RESPONSES,
+    name="attempts:get_details_by_id",
+    tags=["Quiz Attempts"],
+    summary="Get detailed quiz attempt with questions and user answers",
+    description="""
+    **Retrieve detailed information about a quiz attempt including questions, options, and user's answers.**
+    
+    This endpoint:
+    - Returns complete attempt metadata (ID, quiz ID, user ID, attempt number, timing, score)
+    - Includes all questions in the quiz with their options
+    - Shows user's submitted answers for this attempt
+    - Perfect for reviewing attempt details or showing quiz results
+    
+    **Requirements:**
+    - User must be authenticated
+    - Attempt must exist
+    
+    **Response includes:**
+    - Complete attempt information (start/finish times, score, etc.)
+    - All quiz questions with their text, type, points, and options
+    - User's submitted answers (selected options or text responses)
+    - Correctness indicators for each answer
+    
+    **Use cases:**
+    - Show detailed quiz results to users
+    - Review attempt performance
+    - Display question-by-question breakdown
+    - Admin review of user submissions
+    """,
+)
+async def get_attempt_details_by_id(
+    *,
+    attempt_id: int = Path(
+        ...,
+        description="ID of the quiz attempt to retrieve detailed information for",
+        example=1,
+        gt=0
+    ),
+    attempts_service: QuizAttemptsService = Depends(get_service(QuizAttemptsService)),
+    attempts_repo: QuizAttemptsRepository = Depends(get_repository(QuizAttemptsRepository)),
+    questions_repo: QuestionsRepository = Depends(get_repository(QuestionsRepository)),
+    answers_repo: AnswersRepository = Depends(get_repository(AnswersRepository)),
+):
+    result = await attempts_service.get_attempt_details_by_id(
+        attempt_id=attempt_id,
         attempts_repo=attempts_repo,
         questions_repo=questions_repo,
         answers_repo=answers_repo,

@@ -12,7 +12,9 @@ from app.schemas.quiz import (
     QuizInCreate,
     QuizInUpdate,
     QuizOutData,
+    QuizDetailData,
     QuizResponse,
+    QuizDetailResponse,
     QuizPaginatedResponse,
 )
 from app.services.base import BaseService
@@ -51,9 +53,9 @@ class QuizzesService(BaseService):
                 context={"reason": "Quiz not found"},
             )
 
-        return QuizResponse(
+        return QuizDetailResponse(
             message="Quiz retrieved successfully.",
-            data=QuizOutData.model_validate(quiz),
+            data=QuizDetailData.model_validate(quiz),
         )
 
     @return_service

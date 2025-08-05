@@ -6,6 +6,7 @@ from app.database.repositories.base import BaseRepository, db_error_handler
 from app.models.quiz import Quiz
 from app.models.tag import Tag
 from app.models.user import User
+from app.models.question import Question
 from app.schemas.quiz import QuizInCreate, QuizInUpdate
 from app.schemas.pagination import PaginationMeta
 from datetime import datetime, timezone
@@ -79,7 +80,10 @@ class QuizzesRepository(BaseRepository):
 
     @db_error_handler
     async def get_quiz_by_id(self, *, quiz_id: int) -> Quiz | None:
-        query = select(Quiz).options(selectinload(Quiz.tags)).where(and_(Quiz.id == quiz_id, Quiz.deleted_at.is_(None)))
+        query = select(Quiz).options(
+            selectinload(Quiz.tags),
+            selectinload(Quiz.questions).selectinload(Question.options)
+        ).where(and_(Quiz.id == quiz_id, Quiz.deleted_at.is_(None)))
 
         raw_result = await self.connection.execute(query)
         result = raw_result.fetchone()

@@ -8,7 +8,8 @@ from app.database.repositories.quiz_attempts import QuizAttemptsRepository
 from app.database.repositories.quizzes import QuizzesRepository
 from app.models.user import User
 from app.schemas.answer import AnswerOutData, QuizResult, QuizResultResponse
-from app.schemas.quiz_attempt import AttemptOutData, AttemptResponse
+from app.schemas.quiz_attempt import AttemptOutData, AttemptResponse, AttemptDetailData, AttemptDetailResponse
+from app.schemas.question import QuestionOutData
 from app.services.base import BaseService
 from app.utils import response_4xx, return_service
 
@@ -178,6 +179,46 @@ class QuizAttemptsService(BaseService):
         return AttemptResponse(
             message="User attempts retrieved successfully",
             data=[AttemptOutData.model_validate(attempt) for attempt in attempts],
+        )
+
+    @return_service
+    async def get_attempt_details_by_id(
+        self,
+        attempt_id: int,
+        attempts_repo: QuizAttemptsRepository,
+        questions_repo: QuestionsRepository,
+        answers_repo: AnswersRepository,
+    ):
+        """Get detailed attempt information including questions, options, and user answers"""
+
+        # Get the attempt
+        attempt = await attempts_repo.get_attempt_by_id(attempt_id=attempt_id)
+        if not attempt:
+            return response_4xx(
+                status_code=HTTP_404_NOT_FOUND,
+                context={"reason": f"Attempt {attempt_id} not found"},
+            )
+
+        # Get all questions for this quiz with their options
+        quiz_questions = await questions_repo.get_questions_by_quiz_id(quiz_id=attempt.quiz_id)
+        
+        # Get all user answers for this attempt
+        user_answers = await answers_repo.get_answers_by_attempt(attempt_id=attempt_id)
+
+        # Convert to output data models
+        questions_data = [QuestionOutData.model_validate(question) for question in quiz_questions]
+        answers_data = [AnswerOutData.model_validate(answer) for answer in user_answers]
+
+        # Create detailed attempt data
+        attempt_detail = AttemptDetailData(
+            **AttemptOutData.model_validate(attempt).model_dump(),
+            questions=questions_data,
+            user_answers=answers_data,
+        )
+
+        return AttemptDetailResponse(
+            message="Attempt details retrieved successfully",
+            data=attempt_detail,
         )
     
 
