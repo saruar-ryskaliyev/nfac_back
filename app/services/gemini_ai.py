@@ -1,4 +1,5 @@
 import json
+import asyncio
 from typing import Dict, List, Any, Optional
 from pydantic import BaseModel
 
@@ -60,7 +61,26 @@ class GeminiAIService:
         """
         
         try:
-            response = self.model.generate_content(generation_prompt)
+            # Configure generation with timeout
+            generation_config = self.genai.types.GenerationConfig(
+                temperature=0.7,
+                max_output_tokens=2048,
+            )
+            
+            # Run with asyncio timeout to handle hanging requests
+            async def generate_with_timeout():
+                return await asyncio.wait_for(
+                    asyncio.get_event_loop().run_in_executor(
+                        None,
+                        lambda: self.model.generate_content(
+                            generation_prompt,
+                            generation_config=generation_config
+                        )
+                    ),
+                    timeout=60.0  # 60 seconds timeout
+                )
+            
+            response = await generate_with_timeout()
             response_text = response.text.strip()
             
             # Remove any markdown formatting if present
@@ -77,6 +97,8 @@ class GeminiAIService:
             # Validate and return the data
             return QuizGenerationData(**quiz_data)
             
+        except asyncio.TimeoutError:
+            raise ValueError("Quiz generation request timed out after 60 seconds. Please try again.")
         except json.JSONDecodeError as e:
             raise ValueError(f"Failed to parse AI response as JSON: {e}")
         except Exception as e:
