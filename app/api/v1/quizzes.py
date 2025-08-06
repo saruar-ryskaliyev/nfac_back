@@ -10,8 +10,9 @@ from app.database.repositories.tags import TagsRepository
 from app.database.repositories.questions import QuestionsRepository
 from app.database.repositories.options import OptionsRepository
 from app.models.user import User
-from app.schemas.quiz import QuizFilters, QuizInCreate, QuizInUpdate, QuizResponse, QuizDetailResponse, QuizPaginatedResponse, LeaderboardResponse
+from app.schemas.quiz import QuizFilters, QuizInCreate, QuizInUpdate, QuizResponse, QuizDetailResponse, QuizPaginatedResponse, LeaderboardResponse, QuizGenerateRequest
 from app.services.quizzes import QuizzesService
+# GeminiAIService will be imported when needed
 from app.utils import ERROR_RESPONSES
 
 router = APIRouter()
@@ -37,6 +38,75 @@ async def create_quiz(
     """
     Create a new quiz with optional questions and options.
     """
+    result = await quizzes_service.create_quiz(
+        creator=current_user,
+        quiz_in=quiz_in,
+        quizzes_repo=quizzes_repo,
+        tags_repo=tags_repo,
+        questions_repo=questions_repo,
+        options_repo=options_repo,
+    )
+
+    return await result.unwrap()
+
+
+@router.post(
+    path="/generate",
+    status_code=HTTP_201_CREATED,
+    response_model=QuizResponse,
+    responses=ERROR_RESPONSES,
+    name="quizzes:generate",
+)
+async def generate_quiz(
+    *,
+    request: QuizGenerateRequest,
+    quizzes_service: QuizzesService = Depends(get_service(QuizzesService)),
+    quizzes_repo: QuizzesRepository = Depends(get_repository(QuizzesRepository)),
+    tags_repo: TagsRepository = Depends(get_repository(TagsRepository)),
+    questions_repo: QuestionsRepository = Depends(get_repository(QuestionsRepository)),
+    options_repo: OptionsRepository = Depends(get_repository(OptionsRepository)),
+    current_user: User = Depends(get_current_admin_user()),
+):
+    """
+    Generate a quiz using AI based on the provided prompt.
+    """
+    from app.services.gemini_ai import GeminiAIService
+    gemini_service = GeminiAIService()
+    
+    ai_quiz_data = await gemini_service.generate_quiz_from_prompt(
+        prompt=request.prompt,
+        num_questions=request.num_questions
+    )
+    
+    from app.schemas.question import QuestionInQuizCreate
+    from app.schemas.option import OptionInCreate
+    
+    questions = []
+    for question_data in ai_quiz_data.questions:
+        options = [
+            OptionInCreate(
+                option_text=option_text,
+                is_correct=(i == question_data.correct_answer)
+            )
+            for i, option_text in enumerate(question_data.options)
+        ]
+        
+        questions.append(
+            QuestionInQuizCreate(
+                question_text=question_data.question_text,
+                question_type="single",
+                options=options
+            )
+        )
+    
+    quiz_in = QuizInCreate(
+        title=ai_quiz_data.title,
+        description=ai_quiz_data.description,
+        is_public=request.is_public,
+        tag_names=request.tag_names,
+        questions=questions
+    )
+    
     result = await quizzes_service.create_quiz(
         creator=current_user,
         quiz_in=quiz_in,

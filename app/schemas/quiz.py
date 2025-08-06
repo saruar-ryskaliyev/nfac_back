@@ -41,6 +41,13 @@ class QuizInUpdate(BaseModel):
     questions: list[QuestionInQuizCreate] | None = None
 
 
+class QuizGenerateRequest(BaseModel):
+    prompt: str
+    num_questions: int = 5
+    is_public: bool = True
+    tag_names: list[str] = []
+
+
 class QuizFilters(PaginationParams):
     tag: str | None = None
     search: str | None = None
