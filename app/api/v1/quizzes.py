@@ -10,7 +10,7 @@ from app.database.repositories.tags import TagsRepository
 from app.database.repositories.questions import QuestionsRepository
 from app.database.repositories.options import OptionsRepository
 from app.models.user import User
-from app.schemas.quiz import QuizFilters, QuizInCreate, QuizInUpdate, QuizResponse, QuizDetailResponse, QuizPaginatedResponse
+from app.schemas.quiz import QuizFilters, QuizInCreate, QuizInUpdate, QuizResponse, QuizDetailResponse, QuizPaginatedResponse, LeaderboardResponse
 from app.services.quizzes import QuizzesService
 from app.utils import ERROR_RESPONSES
 
@@ -164,16 +164,44 @@ async def update_quiz(
     quizzes_service: QuizzesService = Depends(get_service(QuizzesService)),
     quizzes_repo: QuizzesRepository = Depends(get_repository(QuizzesRepository)),
     tags_repo: TagsRepository = Depends(get_repository(TagsRepository)),
+    questions_repo: QuestionsRepository = Depends(get_repository(QuestionsRepository)),
+    options_repo: OptionsRepository = Depends(get_repository(OptionsRepository)),
     current_user: User = Depends(get_current_admin_user()),
 ):
     """
-    Update a quiz by ID (admin only).
+    Update a quiz by ID (admin only). Questions can be optionally updated.
     """
     result = await quizzes_service.update_quiz(
         quiz_id=quiz_id,
         quiz_in=quiz_in,
         quizzes_repo=quizzes_repo,
         tags_repo=tags_repo,
+        questions_repo=questions_repo,
+        options_repo=options_repo,
+    )
+
+    return await result.unwrap()
+
+
+@router.get(
+    path="/{quiz_id}/leaderboard",
+    status_code=HTTP_200_OK,
+    response_model=LeaderboardResponse,
+    responses=ERROR_RESPONSES,
+    name="quizzes:get_leaderboard",
+)
+async def get_quiz_leaderboard(
+    *,
+    quiz_id: int,
+    quizzes_service: QuizzesService = Depends(get_service(QuizzesService)),
+    quizzes_repo: QuizzesRepository = Depends(get_repository(QuizzesRepository)),
+):
+    """
+    Get the leaderboard for a specific quiz showing top scoring attempts.
+    """
+    result = await quizzes_service.get_quiz_leaderboard(
+        quiz_id=quiz_id,
+        quizzes_repo=quizzes_repo,
     )
 
     return await result.unwrap()

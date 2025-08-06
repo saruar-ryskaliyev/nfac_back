@@ -86,3 +86,15 @@ class QuestionsRepository(BaseRepository):
         await self.connection.refresh(question)
 
         return question
+
+    @db_error_handler
+    async def delete_questions_by_quiz_id(self, *, quiz_id: int) -> None:
+        query = select(Question).where(and_(Question.quiz_id == quiz_id, Question.deleted_at.is_(None)))
+        raw_result = await self.connection.execute(query)
+        questions = raw_result.fetchall()
+        
+        for question_row in questions:
+            question = question_row.Question
+            question.deleted_at = datetime.now(timezone.utc)
+
+        await self.connection.commit()

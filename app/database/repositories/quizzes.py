@@ -1,9 +1,11 @@
 from sqlalchemy import and_, func, or_, select
+from sqlalchemy.sql import text
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.database.repositories.base import BaseRepository, db_error_handler
 from app.models.quiz import Quiz
+from app.models.quiz_attempt import QuizAttempt
 from app.models.tag import Tag
 from app.models.user import User
 from app.models.question import Question
@@ -238,3 +240,60 @@ class QuizzesRepository(BaseRepository):
         await self.connection.refresh(quiz)
 
         return quiz
+
+    @db_error_handler
+    async def get_quiz_leaderboard(self, *, quiz_id: int, limit: int = 50) -> list[QuizAttempt]:
+        """
+        Get the leaderboard for a specific quiz, showing the best attempt from each user.
+        Only returns finished attempts (where finished_at is not null).
+        Uses window function to get highest scoring attempt per user.
+        """
+        # Use a CTE (Common Table Expression) with ROW_NUMBER() to rank attempts per user
+        ranked_attempts = text("""
+            WITH ranked_attempts AS (
+                SELECT 
+                    qa.*,
+                    ROW_NUMBER() OVER (
+                        PARTITION BY qa.user_id 
+                        ORDER BY qa.score DESC, qa.finished_at ASC
+                    ) as rank
+                FROM quiz_attempts qa
+                WHERE qa.quiz_id = :quiz_id 
+                AND qa.finished_at IS NOT NULL
+            )
+            SELECT * FROM ranked_attempts 
+            WHERE rank = 1 
+            ORDER BY score DESC, finished_at ASC
+            LIMIT :limit
+        """)
+
+        raw_result = await self.connection.execute(ranked_attempts, {"quiz_id": quiz_id, "limit": limit})
+        results = raw_result.fetchall()
+
+        # Convert raw results back to QuizAttempt objects
+        quiz_attempts = []
+        for result in results:
+            # Create QuizAttempt object from raw result
+            attempt = QuizAttempt(
+                quiz_id=result.quiz_id,
+                user_id=result.user_id,
+                attempt_no=result.attempt_no
+            )
+            attempt.id = result.id
+            attempt.started_at = result.started_at
+            attempt.finished_at = result.finished_at
+            attempt.score = result.score
+            attempt.created_at = result.created_at
+            attempt.updated_at = result.updated_at
+            attempt.deleted_at = result.deleted_at
+            
+            # We need to load the user separately since we're using raw SQL
+            user_query = select(User).where(User.id == result.user_id)
+            user_result = await self.connection.execute(user_query)
+            user = user_result.fetchone()
+            if user:
+                attempt.user = user.User
+            
+            quiz_attempts.append(attempt)
+
+        return quiz_attempts

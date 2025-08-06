@@ -38,6 +38,7 @@ class QuizInUpdate(BaseModel):
     description: str | None = None
     is_public: bool | None = None
     tag_names: list[str] | None = None
+    questions: list[QuestionInQuizCreate] | None = None
 
 
 class QuizFilters(PaginationParams):
@@ -63,6 +64,30 @@ class QuizDetailResponse(ApiResponse):
     message: str = "Quiz API Response"
     data: QuizDetailData | None = None
     detail: dict[str, Any] | None = {"key": "val"}
+
+
+class LeaderboardEntry(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    
+    user_id: int
+    username: str
+    score: int
+    attempt_number: int
+    finished_at: datetime | None = None
+
+
+class LeaderboardData(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    
+    quiz_id: int
+    quiz_title: str
+    entries: list[LeaderboardEntry] = []
+
+
+class LeaderboardResponse(ApiResponse):
+    message: str = "Quiz Leaderboard Response"
+    data: LeaderboardData | None = None
+    detail: dict[str, Any] | None = None
 
 
 class QuizPaginatedResponse(BaseModel):

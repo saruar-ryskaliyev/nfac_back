@@ -19,6 +19,9 @@ from app.schemas.quiz import (
     QuizResponse,
     QuizDetailResponse,
     QuizPaginatedResponse,
+    LeaderboardResponse,
+    LeaderboardData,
+    LeaderboardEntry,
 )
 from app.services.base import BaseService
 from app.utils import response_4xx, return_service
@@ -147,6 +150,8 @@ class QuizzesService(BaseService):
         quiz_in: QuizInUpdate,
         quizzes_repo: QuizzesRepository,
         tags_repo: TagsRepository,
+        questions_repo: QuestionsRepository | None = None,
+        options_repo: OptionsRepository | None = None,
     ):
         quiz = await quizzes_repo.get_quiz_by_id(quiz_id=quiz_id)
         if not quiz:
@@ -160,6 +165,28 @@ class QuizzesService(BaseService):
             tags = await tags_repo.get_or_create_tags(tag_names=quiz_in.tag_names)
 
         updated_quiz = await quizzes_repo.update_quiz(quiz=quiz, quiz_in=quiz_in, tags=tags)
+
+        if quiz_in.questions is not None and questions_repo and options_repo:
+            await questions_repo.delete_questions_by_quiz_id(quiz_id=quiz_id)
+            
+            for question_data in quiz_in.questions:
+                question_in_create = QuestionInCreate(
+                    quiz_id=quiz_id,
+                    question_text=question_data.question_text,
+                    question_type=question_data.question_type,
+                    points=question_data.points,
+                    options=question_data.options
+                )
+                created_question = await questions_repo.create_question(question_in=question_in_create)
+                
+                if question_data.options:
+                    await options_repo.create_options_for_question(
+                        options_in=question_data.options, 
+                        question_id=created_question.id
+                    )
+            
+            await quizzes_repo.connection.commit()
+            updated_quiz = await quizzes_repo.get_quiz_by_id(quiz_id=quiz_id)
 
         return QuizResponse(
             message="Quiz updated successfully.",
@@ -184,4 +211,41 @@ class QuizzesService(BaseService):
         return QuizResponse(
             message="Quiz deleted successfully.",
             data=None,
+        )
+
+    @return_service
+    async def get_quiz_leaderboard(
+        self,
+        quiz_id: int,
+        quizzes_repo: QuizzesRepository,
+    ):
+        quiz = await quizzes_repo.get_quiz_by_id(quiz_id=quiz_id)
+        if not quiz:
+            return response_4xx(
+                status_code=HTTP_404_NOT_FOUND,
+                context={"reason": "Quiz not found"},
+            )
+
+        leaderboard_entries = await quizzes_repo.get_quiz_leaderboard(quiz_id=quiz_id)
+        
+        entries = [
+            LeaderboardEntry(
+                user_id=entry.user_id,
+                username=entry.user.username,
+                score=entry.score,
+                attempt_number=entry.attempt_no,
+                finished_at=entry.finished_at,
+            )
+            for entry in leaderboard_entries
+        ]
+
+        leaderboard_data = LeaderboardData(
+            quiz_id=quiz.id,
+            quiz_title=quiz.title,
+            entries=entries,
+        )
+
+        return LeaderboardResponse(
+            message="Quiz leaderboard retrieved successfully.",
+            data=leaderboard_data,
         )
